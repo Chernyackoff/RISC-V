@@ -80,7 +80,7 @@ PORT MAP (
             end loop;
 
         end loop;
-        opcode <= "010"; -- Set 1 if b (immediate) > a. All parameter are unsigned
+        opcode <= "010"; -- Set 1 if b (immediate) > a. All parameter are signed
         wait for 15 us;
         for i in 0 to 5 loop
             a <= to_unsigned(i, a'length); -- all values of the first operator
