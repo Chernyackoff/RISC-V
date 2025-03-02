@@ -5,10 +5,10 @@ USE IEEE.numeric_std.ALL;--! for the signed, unsigned types and arithmetic ops
 ENTITY regfile IS
   PORT (
     refclk       : IN  STD_LOGIC;
-    we           : IN  STD_LOGIC;
-    ra1, ra2, wa : IN  STD_LOGIC_VECTOR(4 DOWNTO 0);
-    wd           : IN  STD_LOGIC_VECTOR(31 DOWNTO 0);
-    rd1, rd2     : OUT STD_LOGIC_VECTOR(31 DOWNTO 0)
+    we           : IN  STD_LOGIC;                     -- write enable
+    ra1, ra2, wa : IN  STD_LOGIC_VECTOR(4 DOWNTO 0);  -- read addr 1, read addr 2, write adddr
+    wd           : IN  STD_LOGIC_VECTOR(31 DOWNTO 0); -- write data
+    rd1, rd2     : OUT STD_LOGIC_VECTOR(31 DOWNTO 0)  -- read data 1, read data 2
   );
 END ENTITY regfile;
 
