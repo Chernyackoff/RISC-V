@@ -4,7 +4,6 @@ USE IEEE.numeric_std.ALL;--! for the signed, unsigned types and arithmetic ops
 
 ENTITY instr_decoder IS
   PORT (
-    refclk        : IN STD_LOGIC;
     rst           : IN STD_LOGIC;
     i_instruction : IN STD_LOGIC_VECTOR(31 DOWNTO 0);
 
@@ -23,7 +22,7 @@ ARCHITECTURE rtl OF instr_decoder IS
 
 BEGIN
   -- TODO: Add FENCE instruction decoding 
-  decoder : PROCESS (clk)
+  decoder : PROCESS (all)
   BEGIN
     IF (rst = '0') THEN
       o_opcode <= i_instruction(6 DOWNTO 0);
