@@ -25,7 +25,7 @@ BEGIN
   -- TODO: Add FENCE instruction decoding 
   decoder : PROCESS (clk)
   BEGIN
-    IF rising_edge(clk) THEN
+    IF (rst = '0') THEN
       o_opcode <= i_instruction(6 DOWNTO 0);
       CASE (i_instruction(6 DOWNTO 0))
           -- U-type: lui and auipc
@@ -113,7 +113,7 @@ BEGIN
           o_source2   <= i_instruction(24 DOWNTO 20);
           o_dest      <= i_instruction(11 DOWNTO 7);
           o_immediate <= X"00000000";
-        
+
         WHEN OTHERS =>
           o_funct3    <= "000";
           o_funct7    <= "0000000";
@@ -122,7 +122,15 @@ BEGIN
           o_dest      <= "00000";
           o_immediate <= X"00000000";
       END CASE;
+    ELSE
+      o_funct3    <= "000";
+      o_funct7    <= "0000000";
+      o_source1   <= "00000";
+      o_source2   <= "00000";
+      o_dest      <= "00000";
+      o_immediate <= X"00000000";
     END IF;
+
   END PROCESS;
 
 END ARCHITECTURE rtl;
