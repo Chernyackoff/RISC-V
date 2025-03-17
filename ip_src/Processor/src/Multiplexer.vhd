@@ -8,8 +8,8 @@ GENERIC (
     MUL_SEL_WIDTH: INTEGER := 1 --! select signal lines amount
 );
 PORT (
-    rst    : IN STD_LOGIC;--! sync active high reset. sync -> refclk
-    clk    : IN STD_LOGIC;--! input clock signal
+    rst    : IN STD_LOGIC := '0';--! sync active high reset. sync -> refclk
+    clk    : IN STD_LOGIC := '0';--! input clock signal
     mul_input_0 : IN unsigned(MUL_DATA_WIDTH - 1 DOWNTO 0) := (OTHERS => '0');--! input 0 (from regfile)
     mul_input_1 : IN unsigned(MUL_DATA_WIDTH - 1 DOWNTO 0) := (OTHERS => '0');--! input 1 (flom extender)
     mul_output : OUT unsigned(MUL_DATA_WIDTH - 1 DOWNTO 0) := (OTHERS => '0');--! output
