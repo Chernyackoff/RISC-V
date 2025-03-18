@@ -16,7 +16,7 @@ ENTITY Execute_stage is
         IN_REG_B : IN UNSIGNED(DATA_WIDTH - 1 DOWNTO 0) := (OTHERS => '0'); -- input data signal , B operand for ALU (switch by multiplexer)
         IN_IMM : IN UNSIGNED(DATA_WIDTH - 1 DOWNTO 0) := (OTHERS => '0'); -- input data signal , B operand for ALU (switch by multiplexer)
         ALU_RESULT : OUT UNSIGNED(DATA_WIDTH - 1 DOWNTO 0) := (OTHERS => '0'); -- ALU out
-        --WRITEDATA : OUT UNSIGNED(DATA_WIDTH - 1 DOWNTO 0) := (OTHERS => '0');
+        WRITEDATA : OUT UNSIGNED(DATA_WIDTH - 1 DOWNTO 0) := (OTHERS => '0'); -- output data signal, for writing into memory
         FUNCT3 : IN UNSIGNED(FUNCT3_WIDTH - 1 DOWNTO 0) := (OTHERS => '0'); -- ALU operation signal FUNCT3
         FUNCT7 : IN UNSIGNED(FUNCT7_WIDTH - 1 DOWNTO 0) := (OTHERS => '0'); -- ALU operation signal FUNCT7
         ALU_SEL_B : IN UNSIGNED(SEL_WIDTH - 1 DOWNTO 0) := (OTHERS => '0'); -- ALU operand B multiplexer selection signal
@@ -148,6 +148,7 @@ ARCHITECTURE RTL OF Execute_stage is
         IF(RST = '0') THEN
             IF(rising_edge(clk)) THEN
                 IMM_DATA <= IN_IMM;
+                WRITEDATA <= IN_REG_B;
             END IF;
         END IF;
     END PROCESS main_proc;
