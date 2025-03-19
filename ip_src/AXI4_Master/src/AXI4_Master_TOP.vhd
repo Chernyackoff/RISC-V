@@ -13,11 +13,10 @@ ENTITY AXI4_Master_TOP IS
     arst_n : IN STD_LOGIC;--! sync active low reset. sync -> refclk
 
     --! Controll ports 
-    i_rw    : IN STD_LOGIC;
-    i_addr  : IN STD_LOGIC_VECTOR(ADDR_WIDTH - 1 DOWNTO 0)
-    i_data  : IN STD_LOGIC_VECTOR(DATA_WIDTH - 1 DOWNTO 0);
-    i_req   : IN STD_LOGIC;
-    i_ready : IN STD_LOGIC;
+    i_addr     : IN STD_LOGIC_VECTOR(ADDR_WIDTH - 1 DOWNTO 0)
+    i_data     : IN STD_LOGIC_VECTOR(DATA_WIDTH - 1 DOWNTO 0);
+    i_read_req : IN STD_LOGIC;
+    i_ready    : IN STD_LOGIC;
 
     o_data  : OUT STD_LOGIC_VECTOR(DATA_WIDTH - 1 DOWNTO 0);
     o_valid : OUT STD_LOGIC;
@@ -51,30 +50,220 @@ ENTITY AXI4_Master_TOP IS
     -- BREADY : IN STD_LOGIC;
 
     -- read address signals 
-    ARID     : OUT STD_LOGIC_VECTOR(2 downto 0);
-    ARADDR   : OUT STD_LOGIC_VECTOR;
-    ARLEN    : OUT STD_LOGIC_VECTOR(7 DOWNTO 0);
-    ARSIZE   : OUT STD_LOGIC_VECTOR(2 downto 0);
-    ARBURST  : OUT STD_LOGIC_VECTOR(1 downto 0);
-    ARLOCK   : OUT STD_LOGIC;
-    ARCACHE  : OUT STD_LOGIC_VECTOR(3 downto 0);
-    ARPROT   : OUT STD_LOGIC_VECTOR(2 downto 0);
-    ARQOS    : OUT STD_LOGIC_VECTOR(3 downto 0); 
+    M_AXI_ARID    : OUT STD_LOGIC_VECTOR(2 DOWNTO 0);
+    M_AXI_ARADDR  : OUT STD_LOGIC_VECTOR;
+    M_AXI_ARLEN   : OUT STD_LOGIC_VECTOR(7 DOWNTO 0);
+    M_AXI_ARSIZE  : OUT STD_LOGIC_VECTOR(2 DOWNTO 0);
+    M_AXI_ARBURST : OUT STD_LOGIC_VECTOR(1 DOWNTO 0);
+    M_AXI_ARLOCK  : OUT STD_LOGIC;
+    M_AXI_ARCACHE : OUT STD_LOGIC_VECTOR(3 DOWNTO 0);
+    M_AXI_ARPROT  : OUT STD_LOGIC_VECTOR(2 DOWNTO 0);
+    M_AXI_ARQOS   : OUT STD_LOGIC_VECTOR(3 DOWNTO 0);
 
-    ARVALID  : OUT STD_LOGIC;
-    ARREADY  : IN  STD_LOGIC;
+    M_AXI_ARVALID : OUT STD_LOGIC;
+    M_AXI_ARREADY : IN  STD_LOGIC;
 
     -- read data signals
-    RID    : IN  STD_LOGIC_VECTOR(2 downto 0);
-    RDATA  : IN  STD_LOGIC_VECTOR(DATAWIDTH - 1 DOWNTO 0);
-    RRESP  : IN  STD_LOGIC_VECTOR(1 downto 0);
-    RLAST  : IN  STD_LOGIC;
+    M_AXI_RID   : IN STD_LOGIC_VECTOR(2 DOWNTO 0);
+    M_AXI_RDATA : IN STD_LOGIC_VECTOR(DATAWIDTH - 1 DOWNTO 0);
+    M_AXI_RRESP : IN STD_LOGIC_VECTOR(1 DOWNTO 0);
+    M_AXI_RLAST : IN STD_LOGIC;
 
-    RVALID : IN  STD_LOGIC;
-    RREADY : OUT STD_LOGIC
+    M_AXI_RVALID : IN  STD_LOGIC;
+    M_AXI_RREADY : OUT STD_LOGIC
 
   );
 END ENTITY AXI4_Master_TOP;
 ARCHITECTURE rtl OF AXI4_Master_TOP IS
+  TYPE control_automaton IS (st_idle, st_address, st_data);
+  TYPE channel_automaton IS (st_idle, st_busy, st_done);
+
+  SIGNAL cur_ar_state, cur_r_state          : channel_automaton;
+  SIGNAL cur_r_ctrl_state, cur_w_ctrl_state : control_automaton;
+
+  SIGNAL go_ar, go_r     : STD_LOGIC;
+  SIGNAL done_ar, done_r : STD_LOGIC;
+
+  SIGNAL data_counter : INTEGER := 0;
+
 BEGIN
+  M_AXI_ARQOS  <= (OTHERS => '0'); -- QoS  (optional)
+  M_AXI_ARLOCK <= '0';             -- lock type (optional)
+  M_AXI_ARPROT <= (OTHERS => '0'); -- priority of transaction (optional)
+  M_AXI_ARID   <= (OTHERS => '0'); -- ID of transaction (not nessessary)
+
+  M_AXI_ARCACHE <= <= (OTHERS => '0'); --memory type (will use Device Non-bufferable)
+
+  -----------------------------------------------------------------------
+  -- read automatons
+  -----------------------------------------------------------------------
+  read_sm_handler : PROCESS (clk)
+  BEGIN
+    IF rising_edge(clk) THEN
+      IF rst = '0' THEN
+        cur_r_ctrl_state <= idle;
+        go_ar            <= '0';
+        go_r             <= '0';
+      ELSE
+        CASE cur_r_ctrl_state IS
+          WHEN st_address =>
+            go_r <= '0';
+            IF done_ar THEN
+              cur_r_ctrl_state <= st_data;
+              go_ar            <= '0';
+            ELSE
+              cur_r_ctrl_state <= st_address;
+              go_ar            <= '1';
+            END IF;
+
+          WHEN st_data =>
+            go_ar <= '0';
+            IF done_r THEN
+              cur_r_ctrl_state <= st_idle;
+              go_r             <= '0';
+            ELSE
+              cur_r_ctrl_state <= st_data;
+              go_r             <= '1';
+            END IF;
+
+          WHEN OTHERS =>
+            go_ar <= '0';
+            go_r  <= '0';
+            IF i_read_req THEN
+              cur_r_ctrl_state <= st_address;
+            ELSE
+              cur_r_ctrl_state <= st_idle;
+            END IF;
+        END CASE;
+      END IF;
+    END IF;
+  END PROCESS;
+
+  address_read_channel : PROCESS (clk)
+  BEGIN
+    IF rising_edge(clk) THEN
+      IF rst = '0' THEN
+        cur_ar_state  <= IDLE;
+        M_AXI_ARADDR  <= (OTHERS => '0');
+        M_AXI_ARLEN   <= (OTHERS => '0');
+        M_AXI_ARSIZE  <= (OTHERS => '0');
+        M_AXI_ARBURST <= (OTHERS => '0');
+        M_AXI_ARVALID <= '0';
+        done_ar       <= '0';
+
+      ELSE
+        CASE cur_ar_state IS
+          WHEN st_busy =>
+            done_ar       <= '0';
+            M_AXI_ARADDR  <= i_addr;
+            M_AXI_ARLEN   <= 63;    -- from docs : "Burst_Length = AxLEN[7:0] + 1, to accommodate the extended burst length of the INCR burst type in AXI4"
+            M_AXI_ARSIZE  <= '101'; -- 32-bit bus
+            M_AXI_ARBURST <= '01';  -- increment address on every data burst
+            M_AXI_ARVALID <= '1';
+            IF M_AXI_ARREADY THEN
+              cur_ar_state <= st_done;
+            ELSE
+              cur_ar_state <= st_busy;
+            END IF;
+
+          WHEN st_done =>
+            M_AXI_ARADDR  <= (OTHERS => '0');
+            M_AXI_ARLEN   <= (OTHERS => '0');
+            M_AXI_ARSIZE  <= (OTHERS => '0');
+            M_AXI_ARBURST <= (OTHERS => '0');
+            M_AXI_ARVALID <= '0';
+            done_ar       <= '1';
+            cur_ar_state  <= st_idle;
+
+          WHEN OTHERS => -- define it as idle )
+            M_AXI_ARADDR  <= (OTHERS => '0');
+            M_AXI_ARLEN   <= (OTHERS => '0');
+            M_AXI_ARSIZE  <= (OTHERS => '0');
+            M_AXI_ARBURST <= (OTHERS => '0');
+            M_AXI_ARVALID <= '0';
+            IF go_ar THEN
+              cur_ar_state <= st_busy;
+            ELSE
+              cur_ar_state <= st_idle;
+            END IF;
+        END CASE;
+
+      END IF;
+    END IF;
+  END PROCESS;
+
+  read_data_channel : PROCESS (clk)
+  BEGIN
+    IF rising_edge(clk) THEN
+      IF rst = '0' THEN
+        cur_r_state  <= st_idle;
+        M_AXI_RREADY <= '0';
+        o_data       <= (OTHERS => '0');
+        o_valid      <= '0';
+        data_counter <= 0;
+        done_ar      <= '0';
+      ELSE
+        CASE state IS
+          WHEN st_busy =>
+            done_ar      <= '0';
+            M_AXI_RREADY <= '0';
+            IF data_counter < 64 THEN
+              IF M_AXI_RVALID AND M_AXI_RRESP ~ = '10' AND M_AXI_RESP ~ = '11'
+                IF i_ready
+                  M_AXI_RREADY <= '1';
+                  o_data       <= M_AXI_RDATA;
+                  o_valid      <= '1';
+                  data_counter <= data_counter + 1;
+                ELSE
+                  M_AXI_RREADY <= '0';
+                  o_data       <= M_AXI_RDATA;
+                  o_valid      <= '1';
+                END IF;
+                IF M_AXI_RLAST
+                  cur_r_state <= st_done;
+                ELSE
+                  cur_r_state <= st_busy;
+                END IF;
+              ELSE
+                M_AXI_RREADY <= '0';
+                o_data       <= (OTHERS => '0');
+                o_valid      <= '0';
+              END IF;
+            ELSE
+              cur_r_state  <= st_done;
+              M_AXI_RREADY <= '0';
+              o_data       <= (OTHERS => '0');
+              o_valid      <= '0';
+            END IF;
+
+          WHEN st_done =>
+            M_AXI_RREADY <= '0';
+            o_data       <= (OTHERS => '0');
+            o_valid      <= '0';
+            data_counter <= 0;
+            done_ar      <= '1';
+            cur_r_state  <= st_idle;
+
+          WHEN OTHERS =>
+            M_AXI_RREADY <= '0';
+            o_data       <= (OTHERS => '0');
+            o_valid      <= '0';
+            data_counter <= 0;
+            done_ar      <= '0';
+            IF go_r THEN
+              cur_r_state <= st_busy;
+            ELSE
+              cur_r_state <= st_idle;
+            END IF;
+
+        END CASE;
+
+      END IF;
+    END IF;
+  END PROCESS;
+
+  ------------------------------------------------------------------------
+  -- END read automatons
+  ------------------------------------------------------------------------
+
 END ARCHITECTURE rtl;
