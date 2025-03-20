@@ -25,7 +25,7 @@ entity instruction_cache is
         -- AXI Master interface
         axi_addr        : out std_logic_vector(ADDR_WIDTH-1 downto 0);  -- Address to AXI
         axi_req         : out std_logic;                                -- Request to AXI
-        axi_ready       : in  std_logic;                                -- Ready signal from AXI
+        axi_ready       : out std_logic;                                -- Ready signal to AXI (changed from in to out)
         axi_data        : in  std_logic_vector(DATA_WIDTH*CACHE_LINE_SIZE-1 downto 0);  -- Data from AXI
         axi_valid       : in  std_logic                                 -- Data valid from AXI
     );
@@ -65,6 +65,7 @@ architecture rtl of instruction_cache is
     signal proc_data_i  : std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '0');
     signal axi_req_i    : std_logic := '0';
     signal axi_addr_i   : std_logic_vector(ADDR_WIDTH-1 downto 0) := (others => '0');
+    signal axi_ready_i  : std_logic := '0';  -- Added internal signal for axi_ready
     
 begin
     -- Assign outputs
@@ -72,6 +73,7 @@ begin
     proc_data <= proc_data_i;
     axi_req <= axi_req_i;
     axi_addr <= axi_addr_i;
+    axi_ready <= axi_ready_i;  -- Connect internal signal to output port
     
     -- Address decomposition (fixed bit ranges based on generic parameters)
     addr_tag    <= proc_addr(ADDR_WIDTH-1 downto ADDR_WIDTH-TAG_BITS);
@@ -96,6 +98,7 @@ begin
             proc_data_i <= (others => '0');
             axi_req_i <= '0';
             axi_addr_i <= (others => '0');
+            axi_ready_i <= '0';  -- Initialize axi_ready
             
             -- Initialize cache valid bits to 0
             for i in 0 to (CACHE_SIZE/CACHE_LINE_SIZE)-1 loop
@@ -109,6 +112,7 @@ begin
             -- Default values for output signals
             proc_ready_i <= '0';
             axi_req_i <= '0';
+            axi_ready_i <= '0';  -- Default value for axi_ready
             
             -- State-specific actions
             case current_state is
@@ -128,8 +132,13 @@ begin
                     -- Align address to cache line boundary
                     axi_addr_i <= proc_addr(ADDR_WIDTH-1 downto LINE_OFFSET_BITS) & 
                                  (LINE_OFFSET_BITS-1 downto 0 => '0');
+                    -- Signal ready to accept data from AXI
+                    axi_ready_i <= '1';  -- Set ready signal to indicate cache is ready to accept data
                     
                 when UPDATE_CACHE =>
+                    -- Continue to signal readiness to accept data
+                    axi_ready_i <= '1';  -- Maintain ready signal while waiting for data
+                    
                     if axi_valid = '1' then
                         -- Update tag and valid bit
                         cache_tag(line_index) <= addr_tag;
@@ -151,7 +160,7 @@ begin
     end process;
     
     -- Next state logic - combinational process
-    process(current_state, proc_req, cache_hit, axi_valid, axi_ready)
+    process(current_state, proc_req, cache_hit, axi_valid)
     begin
         -- Default: keep current state
         next_state <= current_state;
@@ -170,9 +179,7 @@ begin
                 end if;
                 
             when FETCH =>
-                if axi_ready = '1' then
-                    next_state <= UPDATE_CACHE;
-                end if;
+                next_state <= UPDATE_CACHE;
                 
             when UPDATE_CACHE =>
                 if axi_valid = '1' then
