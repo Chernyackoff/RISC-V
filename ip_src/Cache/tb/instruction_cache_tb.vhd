@@ -37,7 +37,7 @@ architecture Behavioral of instruction_cache_tb is
             proc_data       : out std_logic_vector(DATA_WIDTH-1 downto 0);
             axi_addr        : out std_logic_vector(ADDR_WIDTH-1 downto 0);
             axi_req         : out std_logic;
-            axi_ready       : in  std_logic;
+            axi_ready       : out std_logic;  -- Changed from in to out
             axi_data        : in  std_logic_vector(DATA_WIDTH*CACHE_LINE_SIZE-1 downto 0);
             axi_valid       : in  std_logic
         );
@@ -57,7 +57,7 @@ architecture Behavioral of instruction_cache_tb is
     -- AXI interface
     signal axi_addr : std_logic_vector(ADDR_WIDTH-1 downto 0);
     signal axi_req : std_logic;
-    signal axi_ready : std_logic := '0';
+    signal axi_ready : std_logic;  -- Now an output from the DUT
     signal axi_data : std_logic_vector(DATA_WIDTH*CACHE_LINE_SIZE-1 downto 0) := (others => '0');
     signal axi_valid : std_logic := '0';
     
@@ -191,7 +191,7 @@ begin
             proc_data => proc_data,
             axi_addr => axi_addr,
             axi_req => axi_req,
-            axi_ready => axi_ready,
+            axi_ready => axi_ready,  -- Now connected as an output
             axi_data => axi_data,
             axi_valid => axi_valid
         );
@@ -232,32 +232,46 @@ begin
             
             -- Wait for cache to process
             if axi_req = '1' then
-                -- Cache miss - simulate AXI response
+                -- Cache miss detected
                 report "Cache miss detected";
                 wait for CLK_PERIOD * 2;  -- Simulate AXI latency
                 
-                axi_ready <= '1';
-                wait for CLK_PERIOD;
-                axi_ready <= '0';
+                -- Modified: No need to manually set axi_ready anymore
+                -- Now we monitor axi_ready and respond when it is asserted
                 
-                -- Prepare AXI data response
-                axi_data <= line_data;
+                -- Wait for axi_ready to be asserted
+                wait until axi_ready = '1' for CLK_PERIOD * 10;
                 
-                -- Wait and then assert valid
-                wait for CLK_PERIOD * 2;  -- Simulate memory access time
-                axi_valid <= '1';
-                wait for CLK_PERIOD;
-                axi_valid <= '0';
+                if axi_ready = '1' then
+                    report "AXI ready received from cache";
+                    
+                    -- Prepare AXI data response
+                    axi_data <= line_data;
+                    
+                    -- Wait and then assert valid
+                    wait for CLK_PERIOD * 2;  -- Simulate memory access time
+                    axi_valid <= '1';
+                    wait for CLK_PERIOD;
+                    axi_valid <= '0';
+                else
+                    report "Timeout waiting for axi_ready" severity warning;
+                end if;
             end if;
             
+            -- Wait for proc_ready to be asserted
             
-            if proc_data = expected_data then
-                report "Test " & integer'image(i) & " PASSED: Data matches expected";
+            if proc_ready = '1' then
+                -- Check if data matches expected
+                if proc_data = expected_data then
+                    report "Test " & integer'image(i) & " PASSED: Data matches expected";
+                else
+                    report "Test " & integer'image(i) & " FAILED: Data mismatch" &
+                           " Got: " & to_hex_string(proc_data) &
+                           " Expected: " & to_hex_string(expected_data)
+                    severity error;
+                end if;
             else
-                report "Test " & integer'image(i) & " FAILED: Data mismatch" &
-                       " Got: " & to_hex_string(proc_data) &
-                       " Expected: " & to_hex_string(expected_data)
-                severity error;
+                report "Timeout waiting for proc_ready" severity error;
             end if;
         
             -- Wait before next test

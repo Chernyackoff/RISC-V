@@ -13,7 +13,7 @@ ENTITY Writeback_stage is
         IN_ALU : IN UNSIGNED(DATA_WIDTH - 1 DOWNTO 0) := (OTHERS => '0'); -- input data signal from ALU
         IN_MEM : IN UNSIGNED(DATA_WIDTH - 1 DOWNTO 0) := (OTHERS => '0'); -- input data signal from memory
         RESULT : OUT UNSIGNED(DATA_WIDTH - 1 DOWNTO 0) := (OTHERS => '0'); -- ALU out
-        ALU_MEM_SEL : IN UNSIGNED(SEL_WIDTH - 1 DOWNTO 0) := (OTHERS => '0'); -- ALU operand B multiplexer selection signal
+        ALU_MEM_SEL : IN UNSIGNED(SEL_WIDTH - 1 DOWNTO 0) := (OTHERS => '0') -- ALU operand B multiplexer selection signal
     );
 END ENTITY Writeback_stage;
 
