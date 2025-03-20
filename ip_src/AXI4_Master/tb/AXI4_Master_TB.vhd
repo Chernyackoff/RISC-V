@@ -9,7 +9,7 @@ entity AXI4_Master_TB is
   );
 end entity AXI4_Master_TB;
 architecture rtl of AXI4_Master_TB is
-  SIGNAL rst   : STD_LOGIC := '0';
+  SIGNAL rst   : STD_LOGIC := '1';
   SIGNAL refclk : STD_LOGIC := '0';
   SIGNAL test_completed : BOOLEAN := false;
     COMPONENT AXI4_Master_TOP IS
@@ -18,14 +18,32 @@ architecture rtl of AXI4_Master_TB is
         rst    : IN  STD_LOGIC--! sync active high reset. sync -> refclk
       );
     END COMPONENT;
-begin
-
-  AXI4_Master_TOP_inst : AXI4_Master_TOP
-  PORT MAP
-  (
-    refclk => refclk,
-    rst    => rst
+  component design_1 is
+  port (
+    clk : in STD_LOGIC;
+    rst : in STD_LOGIC;
+    addr : in STD_LOGIC_VECTOR ( 31 downto 0 );
+    req : in STD_LOGIC;
+    ready : in STD_LOGIC;
+    data : out STD_LOGIC_VECTOR ( 31 downto 0 );
+    valid : out STD_LOGIC
   );
+  end component design_1;
+  signal data_out : std_logic_vector(31 downto 0);
+  signal valid_in  : std_logic;
+begin
+design_1_i: component design_1
+     port map (
+      addr(31 downto 0) => (others => '0'),
+      clk => refclk,
+      data(31 downto 0) => data_out,
+      ready => '1',
+      req => '1',
+      rst => '1',
+      valid => valid_in
+    );
+
+ 
 
   test_clk_generator : PROCESS
   BEGIN
@@ -39,7 +57,7 @@ begin
 
   test_bench_main : PROCESS
   BEGIN
-    test_completed <= true AFTER 50 ns;
+    test_completed <= true AFTER 100 ns;
     WAIT;
   END PROCESS test_bench_main;
 end architecture rtl;
