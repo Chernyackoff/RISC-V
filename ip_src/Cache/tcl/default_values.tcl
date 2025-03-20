@@ -52,7 +52,7 @@ if {![info exists IP_NAME]} {
 } 
  
 if {![info exists IP_PATH]} { 
-	set IP_PATH ../ip 
+	set IP_PATH ../../ip 
 } 
 set __IP_PATH "[file normalize "$IP_PATH"]" 
  
