@@ -44,21 +44,24 @@ ARCHITECTURE behavioral OF riscv_core_tb IS
     CONSTANT INSTR_MEM_SIZE : INTEGER := 64; -- Size in words (adjust as needed)
     TYPE instruction_memory_t IS ARRAY (0 TO INSTR_MEM_SIZE - 1) OF STD_LOGIC_VECTOR(DATA_WIDTH - 1 DOWNTO 0);
     SIGNAL instr_mem : instruction_memory_t := (
-        0 => x"00500113", -- addi x2, x0, 5
-        1 => x"00A00193", -- addi x3, x0, 10
-        2 => x"00310233", -- add x4, x2, x3
-        3 => x"FE310CE3", -- beq x2, x3, +28 (target 0x1C + 0x0C = 0x28, but pc = 0x0C + 4 = 0x10) - Check offset calc! PC = 0C. Target = 0C + 1C = 28. 
-        4 => x"00100313", -- addi x6, x0, 1
-        5 => x"01C0006F", -- jal x1, +28 (target 0x14 + 0x1C = 0x30. Link Addr = 0x18)
-        6 => x"00000013", -- nop
-        7 => x"00000013", -- nop (Branch target 0x28)
-        8 => x"00000013",
-        9 => x"00000013",
-        10 => x"00000013",
-        11 => x"00000013",
-        12 => x"00100393", -- addi x7, x0, 1 (JAL target 0x30)
-        13 => x"00000013", -- end: nop
-        OTHERS => x"00000013"
+        0 => x"00500113", -- 0x00: addi x2, x0, 5       (x2 = 5)
+        1 => x"00A00193", -- 0x04: addi x3, x0, 10      (x3 = 10)
+        2 => x"00310233", -- 0x08: add x4, x2, x3       (x4 = 15)
+        3 => x"FE310CE3", -- 0x0C: beq x2, x3, +28      (Branch to 0x28 if 5==10, Offset seems wrong in original, using it as is)
+        4 => x"00100313", -- 0x10: addi x6, x0, 1       (x6 = 1)
+        5 => x"01C000EF", -- 0x14: jal ra, +28          (Jump to 0x30, Link Addr=0x18 -> ra=x1)
+        6 => x"06300293", -- 0x18: addi x5, x0, 99      (x5 = 99, Execution resumes here after JALR)
+        7 => x"02000063", -- 0x1C: beq x0, x0, +32      (Jump to end_loop at 0x3C)
+        8  => x"00000013", -- 0x20: nop
+        9  => x"00000013", -- 0x24: nop
+        10 => x"00000013", -- 0x28: nop (Target of original BEQ)
+        11 => x"00000013", -- 0x2C: nop
+        12 => x"04D00393", -- 0x30: addi x7, x0, 77      (Subroutine code: x7 = 77)
+        13 => x"00008067", -- 0x34: jalr x0, ra, 0       (Return: Jump to address in ra=x1, which is 0x18)
+        14 => x"00000013", -- 0x38: nop
+        15 => x"00000E63", -- 0x3C: beq x0, x0, 0        (end_loop: Infinite loop jump to self)
+    
+        OTHERS => x"00000013" -- Fill remaining memory with NOPs
     );
 
     SIGNAL requested_addr_reg : STD_LOGIC_VECTOR(ADDR_WIDTH - 1 DOWNTO 0);
