@@ -1,191 +1,192 @@
-library IEEE;
-use IEEE.STD_LOGIC_1164.ALL;
-use IEEE.NUMERIC_STD.ALL;
+LIBRARY IEEE;
+USE IEEE.STD_LOGIC_1164.ALL;
+USE IEEE.NUMERIC_STD.ALL;
 
-entity instruction_cache is
-    generic (
-        ADDR_WIDTH      : integer := 32;    -- Address width
-        DATA_WIDTH      : integer := 32;    -- Data width (instruction width)
-        CACHE_SIZE      : integer := 1024;  -- Cache size in words
-        CACHE_LINE_SIZE : integer := 4;     -- Words per cache line
-        LINE_OFFSET_BITS: integer := 2;     -- log2(CACHE_LINE_SIZE)
-        INDEX_BITS      : integer := 8      -- log2(CACHE_SIZE/CACHE_LINE_SIZE)
+ENTITY instruction_cache IS
+    GENERIC (
+        ADDR_WIDTH : INTEGER := 32; -- Address width
+        DATA_WIDTH : INTEGER := 32; -- Data width (instruction width)
+        CACHE_SIZE : INTEGER := 1024; -- Cache size in words
+        CACHE_LINE_SIZE : INTEGER := 4; -- Words per cache line
+        LINE_OFFSET_BITS : INTEGER := 2; -- log2(CACHE_LINE_SIZE)
+        INDEX_BITS : INTEGER := 8 -- log2(CACHE_SIZE/CACHE_LINE_SIZE)
     );
-    port (
+    PORT (
         -- Clock and reset
-        clk             : in  std_logic;
-        reset_n         : in  std_logic;
-        
-        -- Processor interface
-        proc_addr       : in  std_logic_vector(ADDR_WIDTH-1 downto 0);  -- Address from processor
-        proc_req        : in  std_logic;                                -- Request from processor
-        proc_ready      : out std_logic;                                -- Ready signal to processor
-        proc_data       : out std_logic_vector(DATA_WIDTH-1 downto 0);  -- Instruction data to processor
-        
-        -- AXI Master interface
-        axi_addr        : out std_logic_vector(ADDR_WIDTH-1 downto 0);  -- Address to AXI
-        axi_req         : out std_logic;                                -- Request to AXI
-        axi_ready       : out std_logic;                                -- Ready signal to AXI (changed from in to out)
-        axi_data        : in  std_logic_vector(DATA_WIDTH*CACHE_LINE_SIZE-1 downto 0);  -- Data from AXI
-        axi_valid       : in  std_logic                                 -- Data valid from AXI
-    );
-end instruction_cache;
+        clk : IN STD_LOGIC;
+        reset_n : IN STD_LOGIC;
 
-architecture rtl of instruction_cache is
+        -- Processor interface
+        proc_addr : IN STD_LOGIC_VECTOR(ADDR_WIDTH - 1 DOWNTO 0); -- Address from processor
+        proc_req : IN STD_LOGIC; -- Request from processor
+        proc_ready : OUT STD_LOGIC; -- Ready signal to processor
+        proc_data : OUT STD_LOGIC_VECTOR(DATA_WIDTH - 1 DOWNTO 0); -- Instruction data to processor
+
+        -- AXI Master interface
+        axi_addr : OUT STD_LOGIC_VECTOR(ADDR_WIDTH - 1 DOWNTO 0); -- Address to AXI
+        axi_req : OUT STD_LOGIC; -- Request to AXI
+        axi_ready : OUT STD_LOGIC; -- Ready signal to AXI (changed from in to out)
+        axi_data : IN STD_LOGIC_VECTOR(DATA_WIDTH * CACHE_LINE_SIZE - 1 DOWNTO 0); -- Data from AXI
+        axi_valid : IN STD_LOGIC -- Data valid from AXI
+    );
+END instruction_cache;
+
+ARCHITECTURE rtl OF instruction_cache IS
     -- Calculate tag bits directly from generics
-    constant TAG_BITS   : integer := ADDR_WIDTH - INDEX_BITS - LINE_OFFSET_BITS;
-    
+    CONSTANT TAG_BITS : INTEGER := ADDR_WIDTH - INDEX_BITS - LINE_OFFSET_BITS;
+
     -- Cache memory type definitions
-    type cache_data_type is array (0 to CACHE_SIZE-1) of std_logic_vector(DATA_WIDTH-1 downto 0);
-    type cache_tag_type is array (0 to (CACHE_SIZE/CACHE_LINE_SIZE)-1) of std_logic_vector(TAG_BITS-1 downto 0);
-    type cache_valid_type is array (0 to (CACHE_SIZE/CACHE_LINE_SIZE)-1) of std_logic;
-    
+    TYPE cache_data_type IS ARRAY (0 TO CACHE_SIZE - 1) OF STD_LOGIC_VECTOR(DATA_WIDTH - 1 DOWNTO 0);
+    TYPE cache_tag_type IS ARRAY (0 TO (CACHE_SIZE/CACHE_LINE_SIZE) - 1) OF STD_LOGIC_VECTOR(TAG_BITS - 1 DOWNTO 0);
+    TYPE cache_valid_type IS ARRAY (0 TO (CACHE_SIZE/CACHE_LINE_SIZE) - 1) OF STD_LOGIC;
+
     -- Cache memory signals
-    signal cache_data   : cache_data_type := (others => (others => '0'));
-    signal cache_tag    : cache_tag_type := (others => (others => '0'));
-    signal cache_valid  : cache_valid_type := (others => '0');
-    
+    SIGNAL cache_data : cache_data_type := (OTHERS => (OTHERS => '0'));
+    SIGNAL cache_tag : cache_tag_type := (OTHERS => (OTHERS => '0'));
+    SIGNAL cache_valid : cache_valid_type := (OTHERS => '0');
+
     -- Address decomposition
-    signal addr_tag     : std_logic_vector(TAG_BITS-1 downto 0);
-    signal addr_index   : std_logic_vector(INDEX_BITS-1 downto 0);
-    signal addr_offset  : std_logic_vector(LINE_OFFSET_BITS-1 downto 0);
-    
+    SIGNAL addr_tag : STD_LOGIC_VECTOR(TAG_BITS - 1 DOWNTO 0);
+    SIGNAL addr_index : STD_LOGIC_VECTOR(INDEX_BITS - 1 DOWNTO 0);
+    SIGNAL addr_offset : STD_LOGIC_VECTOR(LINE_OFFSET_BITS - 1 DOWNTO 0);
+
     -- Cache control signals
-    signal cache_hit    : std_logic;
-    signal line_index   : integer range 0 to (CACHE_SIZE/CACHE_LINE_SIZE)-1;
-    signal word_offset  : integer range 0 to CACHE_LINE_SIZE-1;
-    
+    SIGNAL cache_hit : STD_LOGIC;
+    SIGNAL line_index : INTEGER RANGE 0 TO (CACHE_SIZE/CACHE_LINE_SIZE) - 1;
+    SIGNAL word_offset : INTEGER RANGE 0 TO CACHE_LINE_SIZE - 1;
+
     -- FSM states
-    type state_type is (IDLE, CHECK_HIT, FETCH, UPDATE_CACHE);
-    signal current_state : state_type;
-    signal next_state    : state_type;
-    
+    TYPE state_type IS (IDLE, CHECK_HIT, FETCH, UPDATE_CACHE);
+    SIGNAL current_state : state_type;
+    SIGNAL next_state : state_type;
+
     -- Output registers
-    signal proc_ready_i : std_logic := '0';
-    signal proc_data_i  : std_logic_vector(DATA_WIDTH-1 downto 0) := (others => '0');
-    signal axi_req_i    : std_logic := '0';
-    signal axi_addr_i   : std_logic_vector(ADDR_WIDTH-1 downto 0) := (others => '0');
-    signal axi_ready_i  : std_logic := '0';  -- Added internal signal for axi_ready
-    
-begin
+    SIGNAL proc_ready_i : STD_LOGIC := '0';
+    SIGNAL proc_data_i : STD_LOGIC_VECTOR(DATA_WIDTH - 1 DOWNTO 0) := (OTHERS => '0');
+    SIGNAL axi_req_i : STD_LOGIC := '0';
+    SIGNAL axi_addr_i : STD_LOGIC_VECTOR(ADDR_WIDTH - 1 DOWNTO 0) := (OTHERS => '0');
+    SIGNAL axi_ready_i : STD_LOGIC := '0'; -- Added internal signal for axi_ready
+
+BEGIN
     -- Assign outputs
     proc_ready <= proc_ready_i;
     proc_data <= proc_data_i;
     axi_req <= axi_req_i;
     axi_addr <= axi_addr_i;
-    axi_ready <= axi_ready_i;  -- Connect internal signal to output port
-    
+    axi_ready <= axi_ready_i; -- Connect internal signal to output port
+
     -- Address decomposition (fixed bit ranges based on generic parameters)
-    addr_tag    <= proc_addr(ADDR_WIDTH-1 downto ADDR_WIDTH-TAG_BITS);
-    addr_index  <= proc_addr(ADDR_WIDTH-TAG_BITS-1 downto LINE_OFFSET_BITS);
-    addr_offset <= proc_addr(LINE_OFFSET_BITS-1 downto 0);
-    
+    addr_tag <= proc_addr(ADDR_WIDTH - 1 DOWNTO ADDR_WIDTH - TAG_BITS);
+    addr_index <= proc_addr(ADDR_WIDTH - TAG_BITS - 1 DOWNTO LINE_OFFSET_BITS);
+    addr_offset <= proc_addr(LINE_OFFSET_BITS - 1 DOWNTO 0);
+
     -- Convert address parts to integers for indexing
     line_index <= to_integer(unsigned(addr_index));
-    word_offset <= to_integer(unsigned(addr_offset(LINE_OFFSET_BITS-1 downto 2)));
-    
+    word_offset <= to_integer(unsigned(addr_offset(LINE_OFFSET_BITS - 1 DOWNTO 2)));
+
     -- Cache hit detection logic
-    cache_hit <= '1' when (cache_valid(line_index) = '1' and 
-                          cache_tag(line_index) = addr_tag) else '0';
-    
+    cache_hit <= '1' WHEN (cache_valid(line_index) = '1' AND
+        cache_tag(line_index) = addr_tag) ELSE
+        '0';
+
     -- State machine process - sequential logic
-    process(clk, reset_n)
-    begin
-        if reset_n = '0' then
+    PROCESS (clk, reset_n)
+    BEGIN
+        IF reset_n = '0' THEN
             -- Reset state and signals
             current_state <= IDLE;
             proc_ready_i <= '0';
-            proc_data_i <= (others => '0');
+            proc_data_i <= (OTHERS => '0');
             axi_req_i <= '0';
-            axi_addr_i <= (others => '0');
-            axi_ready_i <= '0';  -- Initialize axi_ready
-            
+            axi_addr_i <= (OTHERS => '0');
+            axi_ready_i <= '0'; -- Initialize axi_ready
+
             -- Initialize cache valid bits to 0
-            for i in 0 to (CACHE_SIZE/CACHE_LINE_SIZE)-1 loop
+            FOR i IN 0 TO (CACHE_SIZE/CACHE_LINE_SIZE) - 1 LOOP
                 cache_valid(i) <= '0';
-            end loop;
-            
-        elsif rising_edge(clk) then
+            END LOOP;
+
+        ELSIF rising_edge(clk) THEN
             -- Default state transition
             current_state <= next_state;
-            
+
             -- Default values for output signals
             proc_ready_i <= '0';
             axi_req_i <= '0';
-            axi_ready_i <= '0';  -- Default value for axi_ready
-            
+            axi_ready_i <= '0'; -- Default value for axi_ready
+
             -- State-specific actions
-            case current_state is
-                when IDLE =>
+            CASE current_state IS
+                WHEN IDLE =>
                     -- Nothing to do
-                    
-                when CHECK_HIT =>
-                    if cache_hit = '1' then
+
+                WHEN CHECK_HIT =>
+                    IF cache_hit = '1' THEN
                         -- Cache hit
                         proc_ready_i <= '1';
                         proc_data_i <= cache_data(line_index * CACHE_LINE_SIZE + word_offset);
-                    end if;
-                    
-                when FETCH =>
+                    END IF;
+
+                WHEN FETCH =>
                     -- Request data from AXI
                     axi_req_i <= '1';
                     -- Align address to cache line boundary
-                    axi_addr_i <= proc_addr(ADDR_WIDTH-1 downto LINE_OFFSET_BITS) & 
-                                 (LINE_OFFSET_BITS-1 downto 0 => '0');
+                    axi_addr_i <= proc_addr(ADDR_WIDTH - 1 DOWNTO LINE_OFFSET_BITS) &
+                        (LINE_OFFSET_BITS - 1 DOWNTO 0 => '0');
                     -- Signal ready to accept data from AXI
-                    axi_ready_i <= '1';  -- Set ready signal to indicate cache is ready to accept data
-                    
-                when UPDATE_CACHE =>
+                    axi_ready_i <= '1'; -- Set ready signal to indicate cache is ready to accept data
+
+                WHEN UPDATE_CACHE =>
                     -- Continue to signal readiness to accept data
-                    axi_ready_i <= '1';  -- Maintain ready signal while waiting for data
-                    
-                    if axi_valid = '1' then
+                    axi_ready_i <= '1'; -- Maintain ready signal while waiting for data
+
+                    IF axi_valid = '1' THEN
                         -- Update tag and valid bit
                         cache_tag(line_index) <= addr_tag;
                         cache_valid(line_index) <= '1';
-                        
+
                         -- Update cache data (fill the entire cache line)
-                        for i in 0 to CACHE_LINE_SIZE-1 loop
-                            cache_data(line_index * CACHE_LINE_SIZE + i) <= 
-                                axi_data((i+1)*DATA_WIDTH-1 downto i*DATA_WIDTH);
-                        end loop;
-                        
+                        FOR i IN 0 TO CACHE_LINE_SIZE - 1 LOOP
+                            cache_data(line_index * CACHE_LINE_SIZE + i) <=
+                            axi_data((i + 1) * DATA_WIDTH - 1 DOWNTO i * DATA_WIDTH);
+                        END LOOP;
+
                         -- Forward the requested word to processor
                         proc_ready_i <= '1';
-                        proc_data_i <= axi_data((to_integer(unsigned(addr_offset(LINE_OFFSET_BITS-1 downto 2)))+1)*DATA_WIDTH-1 
-                                              downto to_integer(unsigned(addr_offset(LINE_OFFSET_BITS-1 downto 2)))*DATA_WIDTH);
-                    end if;
-            end case;
-        end if;
-    end process;
-    
+                        proc_data_i <= axi_data((to_integer(unsigned(addr_offset(LINE_OFFSET_BITS - 1 DOWNTO 2))) + 1) * DATA_WIDTH - 1
+                            DOWNTO to_integer(unsigned(addr_offset(LINE_OFFSET_BITS - 1 DOWNTO 2))) * DATA_WIDTH);
+                    END IF;
+            END CASE;
+        END IF;
+    END PROCESS;
+
     -- Next state logic - combinational process
-    process(current_state, proc_req, cache_hit, axi_valid)
-    begin
+    PROCESS (current_state, proc_req, cache_hit, axi_valid)
+    BEGIN
         -- Default: keep current state
         next_state <= current_state;
-        
-        case current_state is
-            when IDLE =>
-                if proc_req = '1' then
+
+        CASE current_state IS
+            WHEN IDLE =>
+                IF proc_req = '1' THEN
                     next_state <= CHECK_HIT;
-                end if;
-                
-            when CHECK_HIT =>
-                if cache_hit = '1' then
+                END IF;
+
+            WHEN CHECK_HIT =>
+                IF cache_hit = '1' THEN
                     next_state <= IDLE;
-                else
+                ELSE
                     next_state <= FETCH;
-                end if;
-                
-            when FETCH =>
+                END IF;
+
+            WHEN FETCH =>
                 next_state <= UPDATE_CACHE;
-                
-            when UPDATE_CACHE =>
-                if axi_valid = '1' then
+
+            WHEN UPDATE_CACHE =>
+                IF axi_valid = '1' THEN
                     next_state <= IDLE;
-                end if;
-        end case;
-    end process;
-    
-end rtl;
+                END IF;
+        END CASE;
+    END PROCESS;
+
+END rtl;

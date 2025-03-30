@@ -1,72 +1,83 @@
-LIBRARY IEEE;--! standard library IEEE (Institute of Electrical and Electronics Engineers)
-USE IEEE.std_logic_1164.ALL;--! standard unresolved logic UX01ZWLH-
-USE IEEE.numeric_std.ALL;--! for the signed, unsigned types and arithmetic ops
+LIBRARY IEEE;
+USE IEEE.std_logic_1164.ALL;
+USE IEEE.numeric_std.ALL;
 
-entity ALU is
-GENERIC (
-    ALU_DATA_WIDTH: INTEGER := 32;-- Data lines amount
-    ALU_FUNCT3_WIDTH: INTEGER := 3;-- funct3 signal lines amount
-    ALU_FUNCT7_WIDTH: INTEGER := 7-- funct7 signal lines amount
-);
-PORT (
-    rst    : IN STD_LOGIC := '0';--! sync active high reset. sync -> refclk
-    clk    : IN STD_LOGIC := '0';--! input clock signal
-    alu_input_a : IN unsigned(ALU_DATA_WIDTH - 1 DOWNTO 0) := (OTHERS => '0');--! input from regfile
-    alu_input_b : IN unsigned(ALU_DATA_WIDTH - 1 DOWNTO 0) := (OTHERS => '0');--! input from multiplexer
-    alu_output : OUT unsigned(ALU_DATA_WIDTH - 1 DOWNTO 0) := (OTHERS => '0');--! output
-    alu_funct3 : IN unsigned(ALU_FUNCT3_WIDTH - 1 DOWNTO 0) := (OTHERS => '0');--! input funct3 field from command
-    alu_funct7 : IN unsigned(ALU_FUNCT7_WIDTH - 1 DOWNTO 0) := (OTHERS => '0');--! input funct7 field from command
-    zero_flag : OUT STD_LOGIC := '0' -- sign of zero result, using in subtract operation
-);
-END entity ALU;
+ENTITY ALU IS
+    GENERIC (
+        ALU_DATA_WIDTH   : INTEGER := 32;
+        ALU_FUNCT3_WIDTH : INTEGER := 3;
+        ALU_FUNCT7_WIDTH : INTEGER := 7
+    );
+    PORT (
+        alu_input_a : IN  UNSIGNED(ALU_DATA_WIDTH - 1 DOWNTO 0); -- Operand A (from regfile/PC)
+        alu_input_b : IN  UNSIGNED(ALU_DATA_WIDTH - 1 DOWNTO 0); -- Operand B (from mux: regfile/imm)
+        alu_funct3  : IN  UNSIGNED(ALU_FUNCT3_WIDTH - 1 DOWNTO 0); -- funct3 field
+        alu_funct7  : IN  UNSIGNED(ALU_FUNCT7_WIDTH - 1 DOWNTO 0); -- funct7 field (bit 5 matters most here)
 
+        alu_output  : OUT UNSIGNED(ALU_DATA_WIDTH - 1 DOWNTO 0); -- Result of ALU operation
+        zero_flag   : OUT STD_LOGIC                              -- '1' if alu_output is zero
+    );
+END ENTITY ALU;
 
-architecture rtl of ALU is
+ARCHITECTURE rtl OF ALU IS
+    SIGNAL alu_result_comb : UNSIGNED(ALU_DATA_WIDTH - 1 DOWNTO 0);
 BEGIN
-    main_proc : PROCESS(clk) is
+
+    alu_logic_proc : PROCESS(alu_input_a, alu_input_b, alu_funct3, alu_funct7)
+        VARIABLE slt_result           : BOOLEAN; -- For SLT/SLTU comparisons
+        VARIABLE current_shift_amount : NATURAL range 0 to 2**5 - 1;
     BEGIN
-        if(rst = '0') then
-            if(rising_edge(clk)) then
-                zero_flag <= '0';
-                case (alu_funct3) is
-                    when "001" => alu_output <= alu_input_a sll to_integer(alu_input_b); -- a << b
-                    when "100" => alu_output <= alu_input_a xor alu_input_b; -- a xor b
-                    when "110" => alu_output <= alu_input_a or alu_input_b; -- a or b
-                    when "111" => alu_output <= alu_input_a and alu_input_b; -- a and b
-                    when others => alu_output <= (OTHERS => '0');
-                end case;
-                if(alu_funct3 = "000") then
-                    if(alu_funct7(ALU_FUNCT7_WIDTH - 2) = '0') then
-                        alu_output <= alu_input_a + alu_input_b; -- a + b
-                    else
-                        alu_output <= alu_input_a - alu_input_b; -- a - b
-                        if(alu_input_a - alu_input_b = x"00000000") THEN
-                            zero_flag <= '1';
-                        END IF;
-                    end if;
-                end if;
-                if(alu_funct3 = "101") then
-                    if(alu_funct7(ALU_FUNCT7_WIDTH - 2) = '0') then
-                        alu_output <= alu_input_a srl to_integer(alu_input_b); -- a >> b (logic)
-                    else
-                        alu_output <= unsigned (to_stdlogicvector(to_bitvector(std_logic_vector(alu_input_a)) sra to_integer(alu_input_b))); -- a >> b (aritmetical)
-                    end if;
-                end if;
-                if(alu_funct3 = "010") then -- Set 1 if b (immediate) > a. All parameter are signed
-                    if(signed(alu_input_b) > signed(alu_input_a)) then
-                        alu_output <= to_unsigned(1, alu_output'length);
-                    else 
-                        alu_output <= to_unsigned(0, alu_output'length);
-                    end if;
-                end if;
-                if(alu_funct3 = "011") then -- Set 1 if b (immediate) > a. All parameter are unsigned
-                    if(alu_input_b > alu_input_a) then
-                        alu_output <= to_unsigned(1, alu_output'length);
-                    else 
-                        alu_output <= to_unsigned(0, alu_output'length);
-                    end if;
-                end if;
-            end if;
-        end if;
-    end process main_proc;
-END architecture rtl;
+        current_shift_amount := to_integer(alu_input_b(4 DOWNTO 0));
+
+        alu_result_comb <= (OTHERS => '0');
+
+        CASE alu_funct3 IS
+            WHEN "000" => -- ADD / SUB (determined by funct7 bit 5)
+                IF alu_funct7(5) = '0' THEN -- ADD
+                    alu_result_comb <= alu_input_a + alu_input_b;
+                ELSE -- SUB ('1')
+                    alu_result_comb <= alu_input_a - alu_input_b;
+                END IF;
+
+            WHEN "001" => -- SLL (Shift Left Logical)
+                alu_result_comb <= shift_left(alu_input_a, current_shift_amount);
+
+            WHEN "010" => -- SLT (Set Less Than, Signed)
+                slt_result := signed(alu_input_a) < signed(alu_input_b);
+                IF slt_result THEN
+                    alu_result_comb <= to_unsigned(1, ALU_DATA_WIDTH);
+                ELSE
+                    alu_result_comb <= (OTHERS => '0');
+                END IF;
+
+            WHEN "011" => -- SLTU (Set Less Than, Unsigned)
+                slt_result := alu_input_a < alu_input_b;
+                IF slt_result THEN
+                    alu_result_comb <= to_unsigned(1, ALU_DATA_WIDTH);
+                ELSE
+                    alu_result_comb <= (OTHERS => '0');
+                END IF;
+
+            WHEN "100" => -- XOR
+                alu_result_comb <= alu_input_a XOR alu_input_b;
+
+            WHEN "101" => -- SRL / SRA (Shift Right Logical/Arithmetic, determined by funct7 bit 5)
+                IF alu_funct7(5) = '0' THEN -- SRL (Logical)
+                    alu_result_comb <= shift_right(alu_input_a, current_shift_amount);
+                ELSE -- SRA (Arithmetic) ('1')
+                    alu_result_comb <= unsigned(shift_right(signed(alu_input_a), current_shift_amount));
+                END IF;
+
+            WHEN "110" => -- OR
+                alu_result_comb <= alu_input_a OR alu_input_b;
+
+            WHEN "111" => -- AND
+                alu_result_comb <= alu_input_a AND alu_input_b;
+
+            WHEN OTHERS =>
+                alu_result_comb <= (OTHERS => 'X');
+        END CASE;
+    END PROCESS alu_logic_proc;
+    alu_output <= alu_result_comb;
+    zero_flag <= '1' WHEN alu_result_comb = (alu_result_comb'RANGE => '0') ELSE '0';
+END ARCHITECTURE rtl;

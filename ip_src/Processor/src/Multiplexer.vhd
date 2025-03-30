@@ -1,37 +1,28 @@
-LIBRARY IEEE;--! standard library IEEE (Institute of Electrical and Electronics Engineers)
-USE IEEE.std_logic_1164.ALL;--! standard unresolved logic UX01ZWLH-
-USE IEEE.numeric_std.ALL;--! for the signed, unsigned types and arithmetic ops
+LIBRARY IEEE;
+USE IEEE.std_logic_1164.ALL;
+USE IEEE.numeric_std.ALL;
 
-entity Multiplexer is
-GENERIC (
-    MUL_DATA_WIDTH: INTEGER := 32; --! Data lines amount
-    MUL_SEL_WIDTH: INTEGER := 1 --! select signal lines amount
-);
-PORT (
-    rst    : IN STD_LOGIC := '0';--! sync active high reset. sync -> refclk
-    clk    : IN STD_LOGIC := '0';--! input clock signal
-    mul_input_0 : IN unsigned(MUL_DATA_WIDTH - 1 DOWNTO 0) := (OTHERS => '0');--! input 0 (from regfile)
-    mul_input_1 : IN unsigned(MUL_DATA_WIDTH - 1 DOWNTO 0) := (OTHERS => '0');--! input 1 (flom extender)
-    mul_output : OUT unsigned(MUL_DATA_WIDTH - 1 DOWNTO 0) := (OTHERS => '0');--! output
-    mul_sel : IN unsigned(MUL_SEL_WIDTH - 1 DOWNTO 0) := (OTHERS => '0')--! select signal, from control unit
-);
-END entity Multiplexer;
+ENTITY Multiplexer IS
+    GENERIC (
+        MUL_DATA_WIDTH : INTEGER := 32;
+        MUL_SEL_WIDTH : INTEGER := 1
+    );
+    PORT (
+        mul_input_0 : IN UNSIGNED(MUL_DATA_WIDTH - 1 DOWNTO 0);
+        mul_input_1 : IN UNSIGNED(MUL_DATA_WIDTH - 1 DOWNTO 0);
+        mul_output : OUT UNSIGNED(MUL_DATA_WIDTH - 1 DOWNTO 0);
+        mul_sel : IN UNSIGNED(MUL_SEL_WIDTH - 1 DOWNTO 0)
+    );
+END ENTITY Multiplexer;
 
-
-architecture rtl of Multiplexer is
-    SIGNAL out_val : unsigned(MUL_DATA_WIDTH - 1 DOWNTO 0) := (OTHERS => '0');
+ARCHITECTURE rtl OF Multiplexer IS
 BEGIN
-main_proc : PROCESS(clk) is
-BEGIN
-    if(rst = '0') then
-        if(rising_edge(clk)) then
-            if(mul_sel = "0") then
-                out_val <= mul_input_0;
-            else
-                out_val <= mul_input_1;
-            end if;
-            mul_output <= out_val;
-        end if;
-    end if;
-end process main_proc;
-END architecture rtl;
+    mux_proc : PROCESS (mul_input_0, mul_input_1, mul_sel)
+    BEGIN
+        IF mul_sel = "0" THEN
+            mul_output <= mul_input_0;
+        ELSE
+            mul_output <= mul_input_1;
+        END IF;
+    END PROCESS mux_proc;
+END ARCHITECTURE rtl;
