@@ -1,75 +1,75 @@
-library IEEE;
-use IEEE.STD_LOGIC_1164.ALL;
-use IEEE.NUMERIC_STD.ALL;
-use IEEE.STD_LOGIC_TEXTIO.ALL;
-use STD.TEXTIO.ALL;
+LIBRARY IEEE;
+USE IEEE.STD_LOGIC_1164.ALL;
+USE IEEE.NUMERIC_STD.ALL;
+USE IEEE.STD_LOGIC_TEXTIO.ALL;
+USE STD.TEXTIO.ALL;
 
-entity instruction_cache_tb is
--- Testbench has no ports
-end instruction_cache_tb;
+ENTITY instruction_cache_tb IS
+    -- Testbench has no ports
+END instruction_cache_tb;
 
-architecture Behavioral of instruction_cache_tb is
+ARCHITECTURE Behavioral OF instruction_cache_tb IS
     -- Constants
-    constant CLK_PERIOD : time := 10 ns;
-    constant ADDR_WIDTH : integer := 32;
-    constant DATA_WIDTH : integer := 32;
-    constant CACHE_SIZE : integer := 64;  -- Smaller size for simulation
-    constant CACHE_LINE_SIZE : integer := 4;
-    constant LINE_OFFSET_BITS : integer := 2;  -- log2(CACHE_LINE_SIZE)
-    constant INDEX_BITS : integer := 4;  -- log2(CACHE_SIZE/CACHE_LINE_SIZE)
-    
+    CONSTANT CLK_PERIOD : TIME := 10 ns;
+    CONSTANT ADDR_WIDTH : INTEGER := 32;
+    CONSTANT DATA_WIDTH : INTEGER := 32;
+    CONSTANT CACHE_SIZE : INTEGER := 64; -- Smaller size for simulation
+    CONSTANT CACHE_LINE_SIZE : INTEGER := 4;
+    CONSTANT LINE_OFFSET_BITS : INTEGER := 2; -- log2(CACHE_LINE_SIZE)
+    CONSTANT INDEX_BITS : INTEGER := 4; -- log2(CACHE_SIZE/CACHE_LINE_SIZE)
+
     -- Component declaration
-    component instruction_cache
-        generic (
-            ADDR_WIDTH      : integer;
-            DATA_WIDTH      : integer;
-            CACHE_SIZE      : integer;
-            CACHE_LINE_SIZE : integer;
-            LINE_OFFSET_BITS: integer;
-            INDEX_BITS      : integer
+    COMPONENT instruction_cache
+        GENERIC (
+            ADDR_WIDTH : INTEGER;
+            DATA_WIDTH : INTEGER;
+            CACHE_SIZE : INTEGER;
+            CACHE_LINE_SIZE : INTEGER;
+            LINE_OFFSET_BITS : INTEGER;
+            INDEX_BITS : INTEGER
         );
-        port (
-            clk             : in  std_logic;
-            reset_n         : in  std_logic;
-            proc_addr       : in  std_logic_vector(ADDR_WIDTH-1 downto 0);
-            proc_req        : in  std_logic;
-            proc_ready      : out std_logic;
-            proc_data       : out std_logic_vector(DATA_WIDTH-1 downto 0);
-            axi_addr        : out std_logic_vector(ADDR_WIDTH-1 downto 0);
-            axi_req         : out std_logic;
-            axi_ready       : out std_logic;  -- Changed from in to out
-            axi_data        : in  std_logic_vector(DATA_WIDTH*CACHE_LINE_SIZE-1 downto 0);
-            axi_valid       : in  std_logic
+        PORT (
+            clk : IN STD_LOGIC;
+            reset_n : IN STD_LOGIC;
+            proc_addr : IN STD_LOGIC_VECTOR(ADDR_WIDTH - 1 DOWNTO 0);
+            proc_req : IN STD_LOGIC;
+            proc_ready : OUT STD_LOGIC;
+            proc_data : OUT STD_LOGIC_VECTOR(DATA_WIDTH - 1 DOWNTO 0);
+            axi_addr : OUT STD_LOGIC_VECTOR(ADDR_WIDTH - 1 DOWNTO 0);
+            axi_req : OUT STD_LOGIC;
+            axi_ready : OUT STD_LOGIC; -- Changed from in to out
+            axi_data : IN STD_LOGIC_VECTOR(DATA_WIDTH * CACHE_LINE_SIZE - 1 DOWNTO 0);
+            axi_valid : IN STD_LOGIC
         );
-    end component;
-    
+    END COMPONENT;
+
     -- Signal declarations
     -- Clock and reset
-    signal clk : std_logic := '0';
-    signal reset_n : std_logic := '0';
-    
+    SIGNAL clk : STD_LOGIC := '0';
+    SIGNAL reset_n : STD_LOGIC := '0';
+
     -- Processor interface
-    signal proc_addr : std_logic_vector(ADDR_WIDTH-1 downto 0) := (others => '0');
-    signal proc_req : std_logic := '0';
-    signal proc_ready : std_logic;
-    signal proc_data : std_logic_vector(DATA_WIDTH-1 downto 0);
-    
+    SIGNAL proc_addr : STD_LOGIC_VECTOR(ADDR_WIDTH - 1 DOWNTO 0) := (OTHERS => '0');
+    SIGNAL proc_req : STD_LOGIC := '0';
+    SIGNAL proc_ready : STD_LOGIC;
+    SIGNAL proc_data : STD_LOGIC_VECTOR(DATA_WIDTH - 1 DOWNTO 0);
+
     -- AXI interface
-    signal axi_addr : std_logic_vector(ADDR_WIDTH-1 downto 0);
-    signal axi_req : std_logic;
-    signal axi_ready : std_logic;  -- Now an output from the DUT
-    signal axi_data : std_logic_vector(DATA_WIDTH*CACHE_LINE_SIZE-1 downto 0) := (others => '0');
-    signal axi_valid : std_logic := '0';
-    
+    SIGNAL axi_addr : STD_LOGIC_VECTOR(ADDR_WIDTH - 1 DOWNTO 0);
+    SIGNAL axi_req : STD_LOGIC;
+    SIGNAL axi_ready : STD_LOGIC; -- Now an output from the DUT
+    SIGNAL axi_data : STD_LOGIC_VECTOR(DATA_WIDTH * CACHE_LINE_SIZE - 1 DOWNTO 0) := (OTHERS => '0');
+    SIGNAL axi_valid : STD_LOGIC := '0';
+
     -- Test control
-    signal sim_done : boolean := false;
-    
+    SIGNAL sim_done : BOOLEAN := false;
+
     -- Stimulus data
-    type addr_array is array (natural range <>) of std_logic_vector(ADDR_WIDTH-1 downto 0);
-    type data_array is array (natural range <>) of std_logic_vector(DATA_WIDTH-1 downto 0);
-    
+    TYPE addr_array IS ARRAY (NATURAL RANGE <>) OF STD_LOGIC_VECTOR(ADDR_WIDTH - 1 DOWNTO 0);
+    TYPE data_array IS ARRAY (NATURAL RANGE <>) OF STD_LOGIC_VECTOR(DATA_WIDTH - 1 DOWNTO 0);
+
     -- Test data - addresses and expected data
-    constant TEST_ADDRESSES : addr_array := (
+    CONSTANT TEST_ADDRESSES : addr_array := (
         X"00000000", -- First address
         X"00000004", -- Next word in same line
         X"00000008", -- Next word in same line
@@ -77,219 +77,219 @@ architecture Behavioral of instruction_cache_tb is
         X"00000010", -- First word in new line
         X"00000000", -- Repeat first address (should be cache hit)
         X"00000100", -- New cache line
-        X"00000104"  -- Next word in new line
+        X"00000104" -- Next word in new line
     );
-    
+
     -- Helper function to create test data pattern
-    function create_test_data(addr: std_logic_vector) return std_logic_vector is
-        variable line_addr : std_logic_vector(ADDR_WIDTH-1 downto 0);
-        variable data_out : std_logic_vector(DATA_WIDTH*CACHE_LINE_SIZE-1 downto 0);
-    begin
+    FUNCTION create_test_data(addr : STD_LOGIC_VECTOR) RETURN STD_LOGIC_VECTOR IS
+        VARIABLE line_addr : STD_LOGIC_VECTOR(ADDR_WIDTH - 1 DOWNTO 0);
+        VARIABLE data_out : STD_LOGIC_VECTOR(DATA_WIDTH * CACHE_LINE_SIZE - 1 DOWNTO 0);
+    BEGIN
         -- Align to cache line boundary
-        line_addr := addr(ADDR_WIDTH-1 downto LINE_OFFSET_BITS) & (LINE_OFFSET_BITS-1 downto 0 => '0');
-        
+        line_addr := addr(ADDR_WIDTH - 1 DOWNTO LINE_OFFSET_BITS) & (LINE_OFFSET_BITS - 1 DOWNTO 0 => '0');
+
         -- Create unique data pattern for each word in the line
-        for i in 0 to CACHE_LINE_SIZE-1 loop
+        FOR i IN 0 TO CACHE_LINE_SIZE - 1 LOOP
             -- Pattern: Upper bits from address, lower bits from word position
-            data_out((i+1)*DATA_WIDTH-1 downto i*DATA_WIDTH) := 
-                std_logic_vector(unsigned(line_addr) + i*4) or X"DEADBEEF";
-        end loop;
-        
-        return data_out;
-    end function;
-    
+            data_out((i + 1) * DATA_WIDTH - 1 DOWNTO i * DATA_WIDTH) :=
+            STD_LOGIC_VECTOR(unsigned(line_addr) + i * 4) OR X"DEADBEEF";
+        END LOOP;
+
+        RETURN data_out;
+    END FUNCTION;
+
     -- Helper function to convert std_logic_vector to string for reporting
-    function vec_to_str(vec: std_logic_vector) return string is
-        variable result : string(1 to vec'length);
-        variable bit_str : string(1 to 1);
-    begin
-        for i in vec'range loop
-            case vec(i) is
-                when '0' => bit_str := "0";
-                when '1' => bit_str := "1";
-                when others => bit_str := "X";
-            end case;
+    FUNCTION vec_to_str(vec : STD_LOGIC_VECTOR) RETURN STRING IS
+        VARIABLE result : STRING(1 TO vec'length);
+        VARIABLE bit_str : STRING(1 TO 1);
+    BEGIN
+        FOR i IN vec'RANGE LOOP
+            CASE vec(i) IS
+                WHEN '0' => bit_str := "0";
+                WHEN '1' => bit_str := "1";
+                WHEN OTHERS => bit_str := "X";
+            END CASE;
             result(vec'length - i) := bit_str(1);
-        end loop;
-        return result;
-    end function;
-    
+        END LOOP;
+        RETURN result;
+    END FUNCTION;
+
     -- Helper function to convert hex 4-bit vector to character
-    function hex_char(vec: std_logic_vector(3 downto 0)) return character is
-        variable result : character;
-    begin
-        case vec is
-            when "0000" => result := '0';
-            when "0001" => result := '1';
-            when "0010" => result := '2';
-            when "0011" => result := '3';
-            when "0100" => result := '4';
-            when "0101" => result := '5';
-            when "0110" => result := '6';
-            when "0111" => result := '7';
-            when "1000" => result := '8';
-            when "1001" => result := '9';
-            when "1010" => result := 'A';
-            when "1011" => result := 'B';
-            when "1100" => result := 'C';
-            when "1101" => result := 'D';
-            when "1110" => result := 'E';
-            when "1111" => result := 'F';
-            when others => result := 'X';
-        end case;
-        return result;
-    end function;
-    
+    FUNCTION hex_char(vec : STD_LOGIC_VECTOR(3 DOWNTO 0)) RETURN CHARACTER IS
+        VARIABLE result : CHARACTER;
+    BEGIN
+        CASE vec IS
+            WHEN "0000" => result := '0';
+            WHEN "0001" => result := '1';
+            WHEN "0010" => result := '2';
+            WHEN "0011" => result := '3';
+            WHEN "0100" => result := '4';
+            WHEN "0101" => result := '5';
+            WHEN "0110" => result := '6';
+            WHEN "0111" => result := '7';
+            WHEN "1000" => result := '8';
+            WHEN "1001" => result := '9';
+            WHEN "1010" => result := 'A';
+            WHEN "1011" => result := 'B';
+            WHEN "1100" => result := 'C';
+            WHEN "1101" => result := 'D';
+            WHEN "1110" => result := 'E';
+            WHEN "1111" => result := 'F';
+            WHEN OTHERS => result := 'X';
+        END CASE;
+        RETURN result;
+    END FUNCTION;
+
     -- Helper function to convert vector to hex string
-    function to_hex_string(vec: std_logic_vector) return string is
-        variable result : string(1 to (vec'length+3)/4);  -- Ceiling division
-        variable v : std_logic_vector(vec'length-1 downto 0) := vec;
-        variable nibble : std_logic_vector(3 downto 0);
-    begin
-        for i in result'range loop
-            if (i-1)*4+3 <= v'high then
-                nibble := v((i-1)*4+3 downto (i-1)*4);
-            elsif (i-1)*4 <= v'high then
-                nibble := (3 downto v'high-(i-1)*4+1 => '0') & v(v'high downto (i-1)*4);
-            else
-                nibble := (others => '0');
-            end if;
-            result(result'length-i+1) := hex_char(nibble);
-        end loop;
-        return result;
-    end function;
-    
-begin
+    FUNCTION to_hex_string(vec : STD_LOGIC_VECTOR) RETURN STRING IS
+        VARIABLE result : STRING(1 TO (vec'length + 3)/4); -- Ceiling division
+        VARIABLE v : STD_LOGIC_VECTOR(vec'length - 1 DOWNTO 0) := vec;
+        VARIABLE nibble : STD_LOGIC_VECTOR(3 DOWNTO 0);
+    BEGIN
+        FOR i IN result'RANGE LOOP
+            IF (i - 1) * 4 + 3 <= v'high THEN
+                nibble := v((i - 1) * 4 + 3 DOWNTO (i - 1) * 4);
+            ELSIF (i - 1) * 4 <= v'high THEN
+                nibble := (3 DOWNTO v'high - (i - 1) * 4 + 1 => '0') & v(v'high DOWNTO (i - 1) * 4);
+            ELSE
+                nibble := (OTHERS => '0');
+            END IF;
+            result(result'length - i + 1) := hex_char(nibble);
+        END LOOP;
+        RETURN result;
+    END FUNCTION;
+
+BEGIN
     -- Clock generation
-    process
-    begin
-        while not sim_done loop
+    PROCESS
+    BEGIN
+        WHILE NOT sim_done LOOP
             clk <= '0';
-            wait for CLK_PERIOD/2;
+            WAIT FOR CLK_PERIOD/2;
             clk <= '1';
-            wait for CLK_PERIOD/2;
-        end loop;
-        wait;
-    end process;
-    
+            WAIT FOR CLK_PERIOD/2;
+        END LOOP;
+        WAIT;
+    END PROCESS;
+
     -- DUT instantiation
-    DUT: instruction_cache
-        generic map (
-            ADDR_WIDTH => ADDR_WIDTH,
-            DATA_WIDTH => DATA_WIDTH,
-            CACHE_SIZE => CACHE_SIZE,
-            CACHE_LINE_SIZE => CACHE_LINE_SIZE,
-            LINE_OFFSET_BITS => LINE_OFFSET_BITS,
-            INDEX_BITS => INDEX_BITS
-        )
-        port map (
-            clk => clk,
-            reset_n => reset_n,
-            proc_addr => proc_addr,
-            proc_req => proc_req,
-            proc_ready => proc_ready,
-            proc_data => proc_data,
-            axi_addr => axi_addr,
-            axi_req => axi_req,
-            axi_ready => axi_ready,  -- Now connected as an output
-            axi_data => axi_data,
-            axi_valid => axi_valid
-        );
-    
+    DUT : instruction_cache
+    GENERIC MAP(
+        ADDR_WIDTH => ADDR_WIDTH,
+        DATA_WIDTH => DATA_WIDTH,
+        CACHE_SIZE => CACHE_SIZE,
+        CACHE_LINE_SIZE => CACHE_LINE_SIZE,
+        LINE_OFFSET_BITS => LINE_OFFSET_BITS,
+        INDEX_BITS => INDEX_BITS
+    )
+    PORT MAP(
+        clk => clk,
+        reset_n => reset_n,
+        proc_addr => proc_addr,
+        proc_req => proc_req,
+        proc_ready => proc_ready,
+        proc_data => proc_data,
+        axi_addr => axi_addr,
+        axi_req => axi_req,
+        axi_ready => axi_ready, -- Now connected as an output
+        axi_data => axi_data,
+        axi_valid => axi_valid
+    );
+
     -- Stimulus process
-    process
-        variable expected_data : std_logic_vector(DATA_WIDTH-1 downto 0);
-        variable line_data : std_logic_vector(DATA_WIDTH*CACHE_LINE_SIZE-1 downto 0);
-        variable offset : integer;
-        variable line_addr : std_logic_vector(ADDR_WIDTH-1 downto 0);
-    begin
+    PROCESS
+        VARIABLE expected_data : STD_LOGIC_VECTOR(DATA_WIDTH - 1 DOWNTO 0);
+        VARIABLE line_data : STD_LOGIC_VECTOR(DATA_WIDTH * CACHE_LINE_SIZE - 1 DOWNTO 0);
+        VARIABLE offset : INTEGER;
+        VARIABLE line_addr : STD_LOGIC_VECTOR(ADDR_WIDTH - 1 DOWNTO 0);
+    BEGIN
         -- Reset sequence
         reset_n <= '0';
-        wait for CLK_PERIOD * 5;
+        WAIT FOR CLK_PERIOD * 5;
         reset_n <= '1';
-        wait for CLK_PERIOD * 2;
-        
-        report "Starting test sequence";
-        
+        WAIT FOR CLK_PERIOD * 2;
+
+        REPORT "Starting test sequence";
+
         -- Test sequence
-        for i in TEST_ADDRESSES'range loop
+        FOR i IN TEST_ADDRESSES'RANGE LOOP
             -- Set processor request
             proc_addr <= TEST_ADDRESSES(i);
             proc_req <= '1';
-            
+
             -- Calculate expected data
-            offset := to_integer(unsigned(TEST_ADDRESSES(i)(LINE_OFFSET_BITS-1 downto 0))) / 4;
-            line_addr := TEST_ADDRESSES(i)(ADDR_WIDTH-1 downto LINE_OFFSET_BITS) & (LINE_OFFSET_BITS-1 downto 0 => '0');
+            offset := to_integer(unsigned(TEST_ADDRESSES(i)(LINE_OFFSET_BITS - 1 DOWNTO 0))) / 4;
+            line_addr := TEST_ADDRESSES(i)(ADDR_WIDTH - 1 DOWNTO LINE_OFFSET_BITS) & (LINE_OFFSET_BITS - 1 DOWNTO 0 => '0');
             line_data := create_test_data(TEST_ADDRESSES(i));
-            expected_data := line_data((offset+1)*DATA_WIDTH-1 downto offset*DATA_WIDTH);
-            
-            report "Test " & integer'image(i) & ": Requesting address " & 
-                   to_hex_string(TEST_ADDRESSES(i));
-            
+            expected_data := line_data((offset + 1) * DATA_WIDTH - 1 DOWNTO offset * DATA_WIDTH);
+
+            REPORT "Test " & INTEGER'image(i) & ": Requesting address " &
+                to_hex_string(TEST_ADDRESSES(i));
+
             -- Wait for cache to respond
-            wait for CLK_PERIOD * 3;
+            WAIT FOR CLK_PERIOD * 3;
             proc_req <= '0';
-            
+
             -- Wait for cache to process
-            if axi_req = '1' then
+            IF axi_req = '1' THEN
                 -- Cache miss detected
-                report "Cache miss detected";
-                wait for CLK_PERIOD * 2;  -- Simulate AXI latency
-                
+                REPORT "Cache miss detected";
+                WAIT FOR CLK_PERIOD * 2; -- Simulate AXI latency
+
                 -- Modified: No need to manually set axi_ready anymore
                 -- Now we monitor axi_ready and respond when it is asserted
-                
+
                 -- Wait for axi_ready to be asserted
-                wait until axi_ready = '1' for CLK_PERIOD * 10;
-                
-                if axi_ready = '1' then
-                    report "AXI ready received from cache";
-                    
+                WAIT UNTIL axi_ready = '1' FOR CLK_PERIOD * 10;
+
+                IF axi_ready = '1' THEN
+                    REPORT "AXI ready received from cache";
+
                     -- Prepare AXI data response
                     axi_data <= line_data;
-                    
+
                     -- Wait and then assert valid
-                    wait for CLK_PERIOD * 2;  -- Simulate memory access time
+                    WAIT FOR CLK_PERIOD * 2; -- Simulate memory access time
                     axi_valid <= '1';
-                    wait for CLK_PERIOD;
+                    WAIT FOR CLK_PERIOD;
                     axi_valid <= '0';
-                else
-                    report "Timeout waiting for axi_ready" severity warning;
-                end if;
-            end if;
-            
+                ELSE
+                    REPORT "Timeout waiting for axi_ready" SEVERITY warning;
+                END IF;
+            END IF;
+
             -- Wait for proc_ready to be asserted
-            
-            if proc_ready = '1' then
+
+            IF proc_ready = '1' THEN
                 -- Check if data matches expected
-                if proc_data = expected_data then
-                    report "Test " & integer'image(i) & " PASSED: Data matches expected";
-                else
-                    report "Test " & integer'image(i) & " FAILED: Data mismatch" &
-                           " Got: " & to_hex_string(proc_data) &
-                           " Expected: " & to_hex_string(expected_data)
-                    severity error;
-                end if;
-            else
-                report "Timeout waiting for proc_ready" severity error;
-            end if;
-        
+                IF proc_data = expected_data THEN
+                    REPORT "Test " & INTEGER'image(i) & " PASSED: Data matches expected";
+                ELSE
+                    REPORT "Test " & INTEGER'image(i) & " FAILED: Data mismatch" &
+                        " Got: " & to_hex_string(proc_data) &
+                        " Expected: " & to_hex_string(expected_data)
+                        SEVERITY error;
+                END IF;
+            ELSE
+                REPORT "Timeout waiting for proc_ready" SEVERITY error;
+            END IF;
+
             -- Wait before next test
-            wait for CLK_PERIOD * 2;
-        end loop;
-        
+            WAIT FOR CLK_PERIOD * 2;
+        END LOOP;
+
         -- End simulation
-        report "Test sequence completed";
+        REPORT "Test sequence completed";
         sim_done <= true;
-        wait;
-    end process;
-    
+        WAIT;
+    END PROCESS;
+
     -- Monitor process
-    process
-    begin
-        wait until sim_done;
-        report "Simulation completed successfully";
-        wait;
-    end process;
-    
-end Behavioral;
+    PROCESS
+    BEGIN
+        WAIT UNTIL sim_done;
+        REPORT "Simulation completed successfully";
+        WAIT;
+    END PROCESS;
+
+END Behavioral;

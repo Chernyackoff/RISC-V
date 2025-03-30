@@ -10,3 +10,4 @@ set SIM_DIR tb
 set CNSTR_DIR cnstr
 set SIM_TOP_FILE_NAME AXI4_Master_TB
 set TOP_FILE_NAME AXI4_Master_TOP
+source   -notrace  tcl/make_prj.tcl
