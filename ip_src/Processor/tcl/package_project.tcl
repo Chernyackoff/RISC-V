@@ -1,4 +1,4 @@
-ipx::package_project -root_dir $IP_PATH/AXI_Master \
+ipx::package_project -root_dir $IP_PATH/Processor \
                      -vendor SUAI \
                      -library user \
                      -taxonomy /UserIP \
@@ -11,9 +11,8 @@ if {[ipx::current_core] == ""} {
   return -code error
 }
 
-set_property display_name AXI4_Master [ipx::current_core]
+set_property display_name Processor [ipx::current_core]
 set_property vendor_display_name SUAI [ipx::current_core]
-set_property name AXI4_Master [ipx::current_core] 
 
 set_property supported_families { \
     artix7 Production artix7l Production aartix7 Production qartix7 Production \
@@ -31,13 +30,13 @@ set_property supported_families { \
 } [ipx::current_core]
 
 set_property core_revision 1 [ipx::current_core]
-set_property version 1.0 [ipx::current_core]
 
 ipx::create_xgui_files [ipx::current_core]
+
 ipx::update_checksums [ipx::current_core]
 ipx::check_integrity [ipx::current_core]
 ipx::save_core [ipx::current_core]
 
 ipx::unload_core [ipx::current_core]
 
-puts "INFO: IP packaging complete for AXI4_Master."
+puts "INFO: IP packaging complete for Processor."
