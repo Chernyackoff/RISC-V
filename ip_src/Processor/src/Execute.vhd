@@ -33,6 +33,7 @@ ENTITY execute IS
 END ENTITY execute;
 
 ARCHITECTURE RTL OF execute IS
+
     COMPONENT ALU IS
         GENERIC (
             ALU_DATA_WIDTH : INTEGER := 32;
@@ -49,58 +50,15 @@ ARCHITECTURE RTL OF execute IS
         );
     END COMPONENT;
 
-    COMPONENT Multiplexer IS
-        GENERIC (
-            MUL_DATA_WIDTH : INTEGER := 32;
-            MUL_SEL_WIDTH : INTEGER := 1
-        );
-        PORT (
-            mul_input_0 : IN unsigned(MUL_DATA_WIDTH - 1 DOWNTO 0);
-            mul_input_1 : IN unsigned(MUL_DATA_WIDTH - 1 DOWNTO 0);
-            mul_output : OUT unsigned(MUL_DATA_WIDTH - 1 DOWNTO 0);
-            mul_sel : IN unsigned(MUL_SEL_WIDTH - 1 DOWNTO 0)
-        );
-    END COMPONENT;
-
-    COMPONENT Adder IS
-        GENERIC (ADDER_DATA_WIDTH : INTEGER := 32);
-        PORT (
-            ADDER_INPUT_A : IN UNSIGNED(ADDER_DATA_WIDTH - 1 DOWNTO 0);
-            ADDER_INPUT_B : IN UNSIGNED(ADDER_DATA_WIDTH - 1 DOWNTO 0);
-            ADDER_OUTPUT : OUT UNSIGNED(ADDER_DATA_WIDTH - 1 DOWNTO 0)
-        );
-    END COMPONENT;
-
     SIGNAL alu_b_operand : UNSIGNED(DW - 1 DOWNTO 0);
-    SIGNAL pc_plus_4 : UNSIGNED(DW - 1 DOWNTO 0);
 
 BEGIN
 
-    pc_plus_4 <= pc + 4;
+    alu_b_operand <= reg_b WHEN alu_sel_b = "0" ELSE imm;
 
-    mux_alu_operand_b : Multiplexer
-    GENERIC MAP(
-        MUL_DATA_WIDTH => DW,
-        MUL_SEL_WIDTH => SW
-    )
-    PORT MAP(
-        mul_input_0 => reg_b,
-        mul_input_1 => imm,
-        mul_sel => alu_sel_b,
-        mul_output => alu_b_operand
-    );
+    pc_branch <= pc + imm;
 
-    add_branch_target : Adder
-    GENERIC MAP(
-        ADDER_DATA_WIDTH => DW
-    )
-    PORT MAP(
-        ADDER_INPUT_A => pc,
-        ADDER_INPUT_B => imm,
-        ADDER_OUTPUT => pc_branch
-    );
-
-    link_address <= pc_plus_4;
+    link_address <= pc + 4;
 
     writedata <= reg_b;
 
