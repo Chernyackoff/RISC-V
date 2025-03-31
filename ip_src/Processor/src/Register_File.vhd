@@ -28,28 +28,24 @@ END ENTITY register_file;
 
 ARCHITECTURE behavioral OF register_file IS
 
-    -- Register file storage type
     CONSTANT NUM_REGS : INTEGER := 2 ** REG_ADDR_WIDTH;
     TYPE reg_array_t IS ARRAY (0 TO NUM_REGS - 1) OF STD_LOGIC_VECTOR(DATA_WIDTH - 1 DOWNTO 0);
     SIGNAL regs : reg_array_t := (OTHERS => (OTHERS => '0'));
 
-    -- Internal signals for read addresses converted to integer
     SIGNAL i_read_addr1 : NATURAL RANGE 0 TO NUM_REGS - 1;
     SIGNAL i_read_addr2 : NATURAL RANGE 0 TO NUM_REGS - 1;
     SIGNAL i_write_addr : NATURAL RANGE 0 TO NUM_REGS - 1;
 
 BEGIN
 
-    -- Address conversion
     i_read_addr1 <= to_integer(unsigned(read_addr1));
     i_read_addr2 <= to_integer(unsigned(read_addr2));
     i_write_addr <= to_integer(unsigned(write_addr));
 
-    -- Write Process (Synchronous)
     write_proc : PROCESS (clk, rst)
     BEGIN
         IF rst = '1' THEN
-            regs <= (OTHERS => (OTHERS => '0')); -- Reset all registers to 0
+            regs <= (OTHERS => (OTHERS => '0'));
         ELSIF rising_edge(clk) THEN
             IF write_enable = '1' THEN
                 -- Ensure x0 (register 0) is never written

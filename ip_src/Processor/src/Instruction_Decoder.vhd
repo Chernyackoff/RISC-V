@@ -24,7 +24,6 @@ BEGIN
 
   decoder_proc : PROCESS (opcode, i_instruction)
   BEGIN
-    -- Default assignments (important for combinational logic to avoid latches)
     o_funct3 <= "000";
     o_funct7 <= "0000000";
     o_source1 <= "00000";
@@ -94,7 +93,7 @@ BEGIN
         -- o_immediate keeps default
 
       WHEN OTHERS =>
-        NULL; -- Keep default assignments
+        NULL;
 
     END CASE;
   END PROCESS decoder_proc;
