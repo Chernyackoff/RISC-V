@@ -731,15 +731,15 @@
       <xilinx:definitionSource>package_project</xilinx:definitionSource>
       <xilinx:vendorDisplayName>SUAI</xilinx:vendorDisplayName>
       <xilinx:coreRevision>1</xilinx:coreRevision>
-      <xilinx:coreCreationDateTime>2025-04-06T16:03:20Z</xilinx:coreCreationDateTime>
+      <xilinx:coreCreationDateTime>2025-04-06T17:03:28Z</xilinx:coreCreationDateTime>
       <xilinx:tags>
-        <xilinx:tag xilinx:name="ui.data.coregen.df@2a241fd6_ARCHIVE_LOCATION">c:/Homework/Master_Degree/Term2/SoC/SoC_RISC_V/ip/AXI_Master</xilinx:tag>
-        <xilinx:tag xilinx:name="ui.data.coregen.df@64122648_ARCHIVE_LOCATION">c:/Homework/Master_Degree/Term2/SoC/SoC_RISC_V/ip/AXI_Master</xilinx:tag>
-        <xilinx:tag xilinx:name="ui.data.coregen.df@1b8dba1b_ARCHIVE_LOCATION">c:/Homework/Master_Degree/Term2/SoC/SoC_RISC_V/ip/AXI_Master</xilinx:tag>
-        <xilinx:tag xilinx:name="ui.data.coregen.df@696090fc_ARCHIVE_LOCATION">c:/Homework/Master_Degree/Term2/SoC/SoC_RISC_V/ip/AXI_Master</xilinx:tag>
-        <xilinx:tag xilinx:name="ui.data.coregen.df@3134a7b5_ARCHIVE_LOCATION">c:/Homework/Master_Degree/Term2/SoC/SoC_RISC_V/ip/AXI_Master</xilinx:tag>
-        <xilinx:tag xilinx:name="ui.data.coregen.df@3c8bbeaa_ARCHIVE_LOCATION">c:/Homework/Master_Degree/Term2/SoC/SoC_RISC_V/ip/AXI_Master</xilinx:tag>
-        <xilinx:tag xilinx:name="ui.data.coregen.df@1683b824_ARCHIVE_LOCATION">c:/Homework/Master_Degree/Term2/SoC/SoC_RISC_V/ip/AXI_Master</xilinx:tag>
+        <xilinx:tag xilinx:name="ui.data.coregen.df@70ec5669_ARCHIVE_LOCATION">c:/Homework/Master_Degree/Term2/SoC/SoC_RISC_V/ip/AXI_Master</xilinx:tag>
+        <xilinx:tag xilinx:name="ui.data.coregen.df@2da0a24b_ARCHIVE_LOCATION">c:/Homework/Master_Degree/Term2/SoC/SoC_RISC_V/ip/AXI_Master</xilinx:tag>
+        <xilinx:tag xilinx:name="ui.data.coregen.df@a455533_ARCHIVE_LOCATION">c:/Homework/Master_Degree/Term2/SoC/SoC_RISC_V/ip/AXI_Master</xilinx:tag>
+        <xilinx:tag xilinx:name="ui.data.coregen.df@33368915_ARCHIVE_LOCATION">c:/Homework/Master_Degree/Term2/SoC/SoC_RISC_V/ip/AXI_Master</xilinx:tag>
+        <xilinx:tag xilinx:name="ui.data.coregen.df@42bc5b78_ARCHIVE_LOCATION">c:/Homework/Master_Degree/Term2/SoC/SoC_RISC_V/ip/AXI_Master</xilinx:tag>
+        <xilinx:tag xilinx:name="ui.data.coregen.df@b8deb01_ARCHIVE_LOCATION">c:/Homework/Master_Degree/Term2/SoC/SoC_RISC_V/ip/AXI_Master</xilinx:tag>
+        <xilinx:tag xilinx:name="ui.data.coregen.df@462b21fc_ARCHIVE_LOCATION">c:/Homework/Master_Degree/Term2/SoC/SoC_RISC_V/ip/AXI_Master</xilinx:tag>
       </xilinx:tags>
     </xilinx:coreExtensions>
     <xilinx:packagingInfo>
