@@ -103,3 +103,5 @@ set_property INCREMENTAL $INCREMENTAL_BUILD [get_filesets sim_1]
 update_compile_order -quiet -fileset sources_1 
 update_compile_order -quiet -fileset sim_1 
 set_property -name {xsim.simulate.runtime} -value {} -objects [get_filesets sim_1]
+
+source $script_path/create_bd.tcl

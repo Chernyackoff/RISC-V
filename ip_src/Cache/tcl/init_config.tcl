@@ -8,6 +8,6 @@ set SRC_DIR src
 set TCL_DIR tcl
 set SIM_DIR tb
 set CNSTR_DIR cnstr
-set SIM_TOP_FILE_NAME Cache_TB
-set TOP_FILE_NAME Cache_TOP
+set SIM_TOP_FILE_NAME instruction_cache_tb
+set TOP_FILE_NAME instruction_cache_TOP
 source   -notrace  tcl/make_prj.tcl
