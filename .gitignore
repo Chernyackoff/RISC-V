@@ -1,54 +1,65 @@
 #########
-#Exclude ALL
+# Exclude ALL initially - Specific inclusions follow
+# This ensures only explicitly included files/folders are tracked.
 #########
 *
 /*
+
 #########
-#Include folders
+# Include folders (needed to descend into directories)
+# This allows Git to see files within folders that match include patterns below.
 #########
 !*/
+
 #########
-#Enable service files
+# Enable service files
 #########
 !*.gitignore
 !*README.md
 !*makefile
 !*LICENSE
+
 #########
-#Source files:
+# Source files:
 #########
 !*.vhd
 !*.v
 !*.sv
 !*.edn
 !*.m
+
 #########
-#Simulation logic analyzer
+# Simulation logic analyzer
 #########
 !*.wcfg
 !*.coe
+
 #########
-#MIG
+# MIG
 #########
 !*.prj
 !*.mem
+
 #########
-#Constraint files
+# Constraint files
 #########
 !*.xdc
+
 #########
-#TCL - files
+# TCL - files
 #########
 !*.tcl
 !*.gtcl
+
 #########
-#Reports
+# Reports
 #########
 !*.rpt
 !*.txt
 !*.vdi
+
 #########
-#C-files
+# C-files
 #########
 !*.c
 !*.h
@@ -57,20 +68,33 @@
 !*.cuh
 !*.cpp
 !*.hpp
+
 #########
-#DATA files
+# DATA files
 #########
 !*.dat
+
 #########
-#Documentation
+# Documentation
 #########
 !*.pdf
 !*.DOXY
 
 #########
-#IP block files
+# IP block files
 #########
 !*.xml
+
+#########
+# Vivado Block Design files
+#########
+!*.bd           # Include Block Design description files
+!bd_backup/     # Include the bd_backup directory itself
+!bd_backup/**   # Include all contents within the bd_backup directory recursively
+
+#########
+# Specific Exclusions (These override includes for paths matching below)
+# Placed last to ensure they take precedence.
 #########
 SoC_RISC_V/*
 ip_src/SoC_RISC_V

@@ -43,7 +43,7 @@ if { [file exists $PROJECT_DIR] != 0 } {
     puts "Delete old Project" 
 } 
 
-# Create new project
+set_param gui.addressMap 0
 create_project $PROJECT_NAME $PROJECT_DIR -part $FPGA_PART 
 set_property target_language $TARGET_LANG [current_project] 
 set_property simulator_language $SIM_LANG [current_project] 
@@ -103,5 +103,3 @@ set_property INCREMENTAL $INCREMENTAL_BUILD [get_filesets sim_1]
 update_compile_order -quiet -fileset sources_1 
 update_compile_order -quiet -fileset sim_1 
 set_property -name {xsim.simulate.runtime} -value {} -objects [get_filesets sim_1]
-
-source $script_path/create_bd.tcl
