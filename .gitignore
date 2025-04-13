@@ -1,11 +1,4 @@
 #########
-# Exclude ALL initially - Specific inclusions follow
-# This ensures only explicitly included files/folders are tracked.
-#########
-*
-/*
-
-#########
 # Include folders (needed to descend into directories)
 # This allows Git to see files within folders that match include patterns below.
 #########
@@ -88,9 +81,9 @@
 #########
 # Vivado Block Design files
 #########
-!*.bd           # Include Block Design description files
-!bd_backup/     # Include the bd_backup directory itself
-!bd_backup/**   # Include all contents within the bd_backup directory recursively
+!*.bd
+!bd_backup/
+!bd_backup/**
 
 #########
 # Specific Exclusions (These override includes for paths matching below)

@@ -1,0 +1,241 @@
+{
+  "design": {
+    "design_info": {
+      "boundary_crc": "0xB5F3F1FEA5FBF232",
+      "device": "xc7v585tffg1157-2",
+      "gen_directory": "../../../../SoC_RISC_V.gen/sources_1/bd/src",
+      "name": "Processor_Design",
+      "rev_ctrl_bd_flag": "RevCtrlBdOff",
+      "synth_flow_mode": "Hierarchical",
+      "tool_version": "2022.2.2",
+      "validated": "true"
+    },
+    "design_tree": {
+      "axi_bram_ctrl_0": "",
+      "blk_mem_gen_0": "",
+      "AXI4_Master_0": "",
+      "instruction_cache_0": "",
+      "riscv_core_0": ""
+    },
+    "ports": {
+      "clk": {
+        "type": "clk",
+        "direction": "I",
+        "parameters": {
+          "ASSOCIATED_RESET": {
+            "value": "rst_n",
+            "value_src": "default"
+          },
+          "CLK_DOMAIN": {
+            "value": "Processor_Design_clk",
+            "value_src": "default"
+          },
+          "FREQ_HZ": {
+            "value": "250000000"
+          },
+          "FREQ_TOLERANCE_HZ": {
+            "value": "0",
+            "value_src": "default"
+          },
+          "INSERT_VIP": {
+            "value": "0",
+            "value_src": "default"
+          },
+          "PHASE": {
+            "value": "0.0",
+            "value_src": "default"
+          }
+        }
+      },
+      "rst_n": {
+        "type": "rst",
+        "direction": "I",
+        "parameters": {
+          "INSERT_VIP": {
+            "value": "0",
+            "value_src": "default"
+          },
+          "POLARITY": {
+            "value": "ACTIVE_LOW",
+            "value_src": "default"
+          }
+        }
+      }
+    },
+    "components": {
+      "axi_bram_ctrl_0": {
+        "vlnv": "xilinx.com:ip:axi_bram_ctrl:4.1",
+        "xci_name": "Processor_Design_axi_bram_ctrl_0_0",
+        "xci_path": "ip/Processor_Design_axi_bram_ctrl_0_0/Processor_Design_axi_bram_ctrl_0_0.xci",
+        "inst_hier_path": "axi_bram_ctrl_0"
+      },
+      "blk_mem_gen_0": {
+        "vlnv": "xilinx.com:ip:blk_mem_gen:8.4",
+        "xci_name": "Processor_Design_blk_mem_gen_0_0",
+        "xci_path": "ip/Processor_Design_blk_mem_gen_0_0/Processor_Design_blk_mem_gen_0_0.xci",
+        "inst_hier_path": "blk_mem_gen_0",
+        "parameters": {
+          "Enable_32bit_Address": {
+            "value": "false"
+          },
+          "Enable_B": {
+            "value": "Use_ENB_Pin"
+          },
+          "Memory_Type": {
+            "value": "Simple_Dual_Port_RAM"
+          },
+          "Operating_Mode_A": {
+            "value": "NO_CHANGE"
+          },
+          "Port_B_Clock": {
+            "value": "100"
+          },
+          "Port_B_Enable_Rate": {
+            "value": "100"
+          },
+          "Register_PortB_Output_of_Memory_Primitives": {
+            "value": "true"
+          },
+          "Use_Byte_Write_Enable": {
+            "value": "false"
+          },
+          "use_bram_block": {
+            "value": "Stand_Alone"
+          }
+        }
+      },
+      "AXI4_Master_0": {
+        "vlnv": "SUAI:user:AXI4_Master:1.0",
+        "xci_name": "Processor_Design_AXI4_Master_0_0",
+        "xci_path": "ip/Processor_Design_AXI4_Master_0_0/Processor_Design_AXI4_Master_0_0.xci",
+        "inst_hier_path": "AXI4_Master_0",
+        "interface_ports": {
+          "M_AXI": {
+            "vlnv": "xilinx.com:interface:aximm_rtl:1.0",
+            "mode": "Master",
+            "address_space_ref": "M_AXI",
+            "base_address": {
+              "minimum": "0x00000000",
+              "maximum": "0xFFFFFFFF",
+              "width": "32"
+            }
+          }
+        },
+        "addressing": {
+          "address_spaces": {
+            "M_AXI": {
+              "range": "4G",
+              "width": "32"
+            }
+          }
+        }
+      },
+      "instruction_cache_0": {
+        "vlnv": "SUAI:user:instruction_cache:1.0",
+        "xci_name": "Processor_Design_instruction_cache_0_0",
+        "xci_path": "ip/Processor_Design_instruction_cache_0_0/Processor_Design_instruction_cache_0_0.xci",
+        "inst_hier_path": "instruction_cache_0"
+      },
+      "riscv_core_0": {
+        "vlnv": "SUAI:user:riscv_core:1.0",
+        "xci_name": "Processor_Design_riscv_core_0_0",
+        "xci_path": "ip/Processor_Design_riscv_core_0_0/Processor_Design_riscv_core_0_0.xci",
+        "inst_hier_path": "riscv_core_0"
+      }
+    },
+    "interface_nets": {
+      "AXI4_Master_0_M_AXI": {
+        "interface_ports": [
+          "AXI4_Master_0/M_AXI",
+          "axi_bram_ctrl_0/S_AXI"
+        ]
+      },
+      "axi_bram_ctrl_0_BRAM_PORTA": {
+        "interface_ports": [
+          "axi_bram_ctrl_0/BRAM_PORTA",
+          "blk_mem_gen_0/BRAM_PORTA"
+        ]
+      },
+      "axi_bram_ctrl_0_BRAM_PORTB": {
+        "interface_ports": [
+          "axi_bram_ctrl_0/BRAM_PORTB",
+          "blk_mem_gen_0/BRAM_PORTB"
+        ]
+      }
+    },
+    "nets": {
+      "AXI4_Master_0_o_data": {
+        "ports": [
+          "AXI4_Master_0/o_data",
+          "instruction_cache_0/axi_data"
+        ]
+      },
+      "AXI4_Master_0_o_valid": {
+        "ports": [
+          "AXI4_Master_0/o_valid",
+          "instruction_cache_0/axi_valid"
+        ]
+      },
+      "clk_1": {
+        "ports": [
+          "clk",
+          "riscv_core_0/clk",
+          "instruction_cache_0/clk",
+          "AXI4_Master_0/refclk",
+          "axi_bram_ctrl_0/s_axi_aclk"
+        ]
+      },
+      "instruction_cache_0_axi_addr": {
+        "ports": [
+          "instruction_cache_0/axi_addr",
+          "AXI4_Master_0/i_addr"
+        ]
+      },
+      "instruction_cache_0_axi_ready": {
+        "ports": [
+          "instruction_cache_0/axi_ready",
+          "AXI4_Master_0/i_ready"
+        ]
+      },
+      "instruction_cache_0_axi_req": {
+        "ports": [
+          "instruction_cache_0/axi_req",
+          "AXI4_Master_0/i_read_req"
+        ]
+      },
+      "instruction_cache_0_proc_data": {
+        "ports": [
+          "instruction_cache_0/proc_data",
+          "riscv_core_0/icache_proc_data"
+        ]
+      },
+      "instruction_cache_0_proc_ready": {
+        "ports": [
+          "instruction_cache_0/proc_ready",
+          "riscv_core_0/icache_proc_ready"
+        ]
+      },
+      "riscv_core_0_icache_proc_addr": {
+        "ports": [
+          "riscv_core_0/icache_proc_addr",
+          "instruction_cache_0/proc_addr"
+        ]
+      },
+      "riscv_core_0_icache_proc_req": {
+        "ports": [
+          "riscv_core_0/icache_proc_req",
+          "instruction_cache_0/proc_req"
+        ]
+      },
+      "rst_n_1": {
+        "ports": [
+          "rst_n",
+          "riscv_core_0/rst",
+          "instruction_cache_0/reset_n",
+          "AXI4_Master_0/arst_n",
+          "axi_bram_ctrl_0/s_axi_aresetn"
+        ]
+      }
+    }
+  }
+}
