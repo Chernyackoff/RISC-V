@@ -75,17 +75,11 @@
         "xci_path": "ip/Processor_Design_blk_mem_gen_0_0/Processor_Design_blk_mem_gen_0_0.xci",
         "inst_hier_path": "blk_mem_gen_0",
         "parameters": {
-          "Coe_File": {
-            "value": "../../../../../../../src/rv32i_test_memh.coe"
-          },
           "Enable_32bit_Address": {
             "value": "false"
           },
           "Enable_B": {
             "value": "Use_ENB_Pin"
-          },
-          "Load_Init_File": {
-            "value": "true"
           },
           "Memory_Type": {
             "value": "Simple_Dual_Port_RAM"
