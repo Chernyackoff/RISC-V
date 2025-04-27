@@ -76,7 +76,7 @@
         "inst_hier_path": "blk_mem_gen_0",
         "parameters": {
           "Coe_File": {
-            "value": "../../../../../../../src/rv32i_test_memh.coe"
+            "value": "../../../../../../../src/test_prog_text_section.coe"
           },
           "Enable_32bit_Address": {
             "value": "false"

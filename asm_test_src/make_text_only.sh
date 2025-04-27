@@ -1,19 +1,20 @@
 #!/bin/bash
+if [ $# -eq 0 ]
+then
+    asm_source="rv32i_test.S"
+    echo "asm file name is not provided. Use default source file: $asm_source"
+else
+    asm_source=$1
+fi
 
-riscv64-unknown-elf-gcc -nostdlib -nostartfiles rv32i_test.S -Trv32i_test.ld -o rv32i_test.elf
-riscv64-unknown-elf-objcopy -O binary --only-section=.text rv32i_test.elf rv32i_test.bin
+#compile test prog from chossen test prog file
+riscv64-linux-gnu-gcc -nostdlib -nostartfiles $asm_source -Tlinker_script.ld -o test_prog.elf
+#get from elf file only text section 
+riscv64-linux-gnu-objcopy -O binary --only-section=.text test_prog.elf test_prog_text_section.bin
 
-# Convert binary to Verilog hex format
-# -p: plain hex dump
-# -c 4: group by 4 bytes (32 bits)
-# sed 's/\(..\)\(..\)\(..\)\(..\)/\4\3\2\1/': Reverse byte order within each 32-bit word
-#                                             (Needed because objcopy outputs little-endian bytes,
-#                                              and $readmemh expects the word value, often interpreted MSB first)
-# Adjust sed if your core/memory expects big-endian words directly.
-xxd -p -c 4 rv32i_test.bin | sed 's/\(..\)\(..\)\(..\)\(..\)/\4\3\2\1/' > rv32i_test_memh.hex
+python ./convert_bin_to_coe.py test_prog_text_section.bin
 
-echo "Generated rv32i_test_memh.hex (first 256 bytes):"
-head -n 64 rv32i_test_memh.hex
+cp test_prog_text_section.coe ../src/
 
 # Clean up intermediate binary file
-rm rv32i_test.bin
+rm test_prog.elf test_prog_text_section.bin test_prog_text_section.coe
